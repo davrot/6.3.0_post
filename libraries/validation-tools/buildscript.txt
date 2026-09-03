@@ -1,0 +1,9 @@
+validation-tools
+--dependencies=None
+--env-pass-through=
+--esmock-loader=False
+--is-library=True
+--node-version=24.18.1
+--public-repo=False
+--test-acceptance-runner=vitest
+--test-unit-runner=vitest

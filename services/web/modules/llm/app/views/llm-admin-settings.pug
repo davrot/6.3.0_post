@@ -1,0 +1,69 @@
+extends ../../../../app/views/layout-react
+
+block entrypointVar
+    - entrypoint = 'modules/llm/pages/admin/llm-admin-settings'
+
+block vars
+    // 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title.
+    - const hideBrandTitle = true
+    - const bodyDataPage = 'llm-admin'
+    - isWebsiteRedesign = true
+    // 2026-09 (owner): no footer on the LLM admin page.
+    - const showThinFooter = false
+    // 2026-09 (O, owner): NO footer at all on this page (showThinFooter=false
+    // would flip to the fat marketing footer) — only "/" keeps a footer.
+    - const suppressFooter = true
+    // 2026-09 (owner): join the red admin page family (gold: /admin/site).
+    - const redNav = true
+
+block append meta
+    // 2026-09 (P, owner): theme machinery from the gold /admin/site pattern —
+    // the page follows the overall theme (dark/light) like /admin/site &
+    // /user/mysettings (was stuck on the layout default).
+    meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
+    script(type="text/javascript" nonce=scriptNonce).
+        (function () {
+        function apply() {
+        try {
+        var el = document.querySelector('meta[name=ol-adminOverallTheme]');
+        if (!el) return;
+        var v = el.getAttribute('content') || '';
+        var prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark = v === 'system' ? prefersDark : v !== 'light-';
+        document.body.dataset.theme = dark ? 'default' : 'light';
+        } catch (e) {}
+        }
+        if (document.body) apply();
+        else document.addEventListener('DOMContentLoaded', apply);
+        })();
+    meta(name='ol-systemPrompt' data-type='string' content=systemPrompt)
+    meta(name='ol-llmApiUrl' data-type='string' content=llmApiUrl)
+    meta(name='ol-llmApiType' data-type='string' content=llmApiType)
+    meta(name='ol-hasLlmApiKey' data-type='string' content=hasLlmApiKey ? 'true' : 'false')
+    meta(name='ol-allowedModels' data-type='string' content=(allowedModels || []).join(','))
+    //- overleaf-lab (grammar port): global force-off + LanguageTool service
+    meta(name='ol-llmDisabledByAdmin' data-type='string' content=llmDisabledByAdmin ? 'true' : 'false')
+    meta(name='ol-languageToolUrl' data-type='string' content=languageToolUrl)
+    meta(name='ol-languageToolDisabledByAdmin' data-type='string' content=languageToolDisabledByAdmin ? 'true' : 'false')
+    meta(name='ol-knownModels' data-type='string' content=(knownModels || []).join(','))
+    meta(name='ol-completionModel' data-type='string' content=completionModel)
+    meta(name='ol-llmApiUrlFromEnv' data-type='string' content=llmApiUrlFromEnv ? 'true' : 'false')
+    meta(name='ol-llmApiTypeFromEnv' data-type='string' content=llmApiTypeFromEnv ? 'true' : 'false')
+    meta(name='ol-complianceRubrics' data-type='json' content=JSON.stringify(complianceRubrics || []))
+    meta(name='ol-reviewModel' data-type='string' content=reviewModel)
+    meta(name='ol-maxContextTokens' data-type='string' content=String(maxContextTokens))
+    meta(name='ol-reviewMaxTokens' data-type='string' content=String(reviewMaxTokens))
+    //- overleaf-lab: per-feature enable/disable toggles (default true)
+    meta(name='ol-chatEnabled' data-type='json' content=JSON.stringify(chatEnabled))
+    meta(name='ol-completionEnabled' data-type='json' content=JSON.stringify(completionEnabled))
+    meta(name='ol-reviewEnabled' data-type='json' content=JSON.stringify(reviewEnabled))
+    //- overleaf-lab: editable AI prompts and their built-in defaults for reset buttons
+    meta(name='ol-askAiSystemPrompt' data-type='string' content=askAiSystemPrompt)
+    meta(name='ol-errorPrompt' data-type='string' content=errorPrompt)
+    meta(name='ol-reviewSystemPrompt' data-type='string' content=reviewSystemPrompt)
+    meta(name='ol-askAiActionPrompts' data-type='json' content=JSON.stringify(askAiActionPrompts || {}))
+    meta(name='ol-promptDefaults' data-type='json' content=JSON.stringify(promptDefaults || {}))
+
+block content
+    main#main-content.content.content-alt
+        #llm-admin-settings-root

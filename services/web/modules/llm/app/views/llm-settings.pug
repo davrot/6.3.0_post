@@ -1,0 +1,41 @@
+extends ../../../../app/views/layout-react
+
+block entrypointVar
+	- entrypoint = 'modules/llm/pages/user/llm-settings'
+
+block vars
+	// 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title on app/admin/user pages.
+	- const hideBrandTitle = true
+	- const bodyDataPage = 'llm-settings'
+	- isWebsiteRedesign = true
+	// 2026-09 (owner): user-settings family — blue gradient nav, no footer.
+	- const showThinFooter = false
+	- const suppressFooter = true
+
+block append meta
+	// 2026-09 (P, owner): theme machinery from the gold /admin/site pattern —
+	// the page follows the overall theme (dark/light) like /admin/site &
+	// /user/mysettings (was stuck on the layout default).
+	meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
+	script(type="text/javascript" nonce=scriptNonce).
+		(function () {
+		function apply() {
+		try {
+		var el = document.querySelector('meta[name=ol-adminOverallTheme]');
+		if (!el) return;
+		var v = el.getAttribute('content') || '';
+		var prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		var dark = v === 'system' ? prefersDark : v !== 'light-';
+		document.body.dataset.theme = dark ? 'default' : 'light';
+		} catch (e) {}
+		}
+		if (document.body) apply();
+		else document.addEventListener('DOMContentLoaded', apply);
+		})();
+	meta(name='ol-user' data-type='json' content=user)
+	meta(name='ol-featureChatEnabled' data-type='json' content=JSON.stringify(featureFlags.chatEnabled))
+	meta(name='ol-featureCompletionEnabled' data-type='json' content=JSON.stringify(featureFlags.completionEnabled))
+
+block content
+	main#main-content.content.content-alt
+		#settings-page-root
