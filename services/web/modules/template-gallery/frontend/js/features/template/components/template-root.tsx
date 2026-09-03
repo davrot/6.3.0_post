@@ -73,7 +73,6 @@ function TemplateChrome() {
                 <TemplatePageContent />
               </TemplateProvider>
             </div>
-            <Footer {...footerProps} />
           </div>
           <CookieBanner />
         </div>

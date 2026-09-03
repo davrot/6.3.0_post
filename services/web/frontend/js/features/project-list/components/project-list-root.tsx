@@ -62,7 +62,6 @@ function DefaultNavbarAndFooter({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
-      <Footer {...footerProps} />
     </>
   )
 }

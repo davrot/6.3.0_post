@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@overleaf/logger": "*",
-    "dropbox": "^10.44.0"
+    "dropbox": "^10.44.0",
+    "express": "*"
   },
   "devDependencies": {
     "vitest": "^2.0.0",

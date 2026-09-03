@@ -1,14 +1,18 @@
 extends ../../../../../app/views/layout-react
 
 block entrypointVar
-	- entrypoint = 'pages/user/email-preferences'
+	- entrypoint = 'pages/user/notification-prefs'
 
 block vars
+	- const hideNavLogo = true
 	- isWebsiteRedesign = true
 	// 2026-09 (S, owner): join the user-settings family (/user/mysettings family)
 	// — blue gradient nav, no brand title, no footer, theme-aware. Was on the
 	// marketing website-redesign layout (public-page look + its own footer).
 	- const blueNav = true
+	// 2026-09 (8, owner): hides the navbar Account pill on this page — the user
+	// menu moves to the down-left sidebar slot (.ds-nav-sidebar-lower).
+	- const bodyDataPage = 'notification-prefs'
 	- const hideBrandTitle = true
 	- const suppressFooter = true
 	- const suppressPugCookieBanner = true
@@ -17,6 +21,9 @@ block append meta
 	// 2026-09 (S+P, owner): theme machinery from the gold /admin/site pattern
 	// (user-my-settings.pug) — the page follows the overall theme.
 	meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
+	meta(name='ol-userSettings' data-type='json' content=userSettings)
+	meta(name='ol-overallThemes' data-type='json' content=overallThemes)
+
 	script(type="text/javascript" nonce=scriptNonce).
 		(function () {
 		  function apply() {
@@ -36,9 +43,20 @@ block append meta
 block content
 	main#main-content.content
 		.container
-			.col-lg-10.offset-lg-1.col-xl-8.offset-xl-2
-				.page-header
-					h1 #{translate("email_preferences")}
+			// 2026-09 (S+P, owner): user-settings family layout — left column
+			// with the down-left SHARED account menu (.ds-nav-sidebar-lower,
+			// same component as the golden /admin/site), content in gold
+			// .page-content-card sections. The navbar Account pill is hidden
+			// (body[data-page=notification-prefs] CSS).
+			.d-flex.align-items-start.notification-prefs__layout
+				nav.notification-prefs__sidebar(aria-label=translate("notification_preferences"))
+					ul.list-unstyled
+						li
+							a(href='/user/notification-preferences') #{translate("notification_preferences")}
+					#notif-prefs-account-root
+				.flex-grow-1.notification-prefs__content.pl-4
+					.page-header
+						h1 #{translate("email_preferences")}
 
 				form.notification-settings-container(
 					name='notificationsForm'
@@ -49,14 +67,14 @@ block content
 				)
 					input(name='_csrf' type='hidden' value=csrfToken)
 
-					.setting-container
+					.card.page-content-card.setting-container.mb-4
 						input(name='muteAllNotifications' id='muteAllNotifications' type='checkbox' value='notificationsOn' checked=notificationsEnabled)
 						div
 							label.checkbox-label(for='muteAllNotifications')
 								h2.h4.mb-0 #{translate("notifications_on_project_activity")}
 							p #{translate("notifications_on_project_activity_description")}
 
-					.setting-container
+					.card.page-content-card.setting-container.mb-4
 						input(name='notificationDelayMinutes' id='notificationDelayMinutes' type='number' min='1' max='10080' step='1' value=(notificationDelayMinutes != null ? notificationDelayMinutes : ''))
 						div
 							label.checkbox-label(for='notificationDelayMinutes')
@@ -72,5 +90,5 @@ block content
 
 				.page-separator
 				.d-flex.gap-3
-					a.btn.btn-secondary(href='/user/settings') #{translate("back_to_account_settings")}
+					a.btn.btn-secondary(href='/user/mysettings') #{translate("back_to_account_settings")}
 					a.btn.btn-secondary(href='/project') #{translate("back_to_your_projects")}

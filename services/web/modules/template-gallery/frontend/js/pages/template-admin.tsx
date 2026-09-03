@@ -54,7 +54,6 @@ function TemplateAdminChrome() {
                   <TemplateBundles />
                 </div>
               </main>
-              <Footer {...footerProps} />
             </div>
           </div>
           <CookieBanner />

@@ -79,7 +79,6 @@ function LibraryChrome({ initialView }: { initialView: LibraryView }) {
                 </LibraryProvider>
               </main>
             </div>
-            <Footer {...footerProps} />
           </div>
           <CookieBanner />
         </div>

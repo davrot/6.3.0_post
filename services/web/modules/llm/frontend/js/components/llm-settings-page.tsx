@@ -14,6 +14,7 @@ import OLPageContentCard from '@/shared/components/ol/ol-page-content-card'
 import { UserProvider } from '@/shared/context/user-context'
 import useWaitForI18n from '@/shared/hooks/use-wait-for-i18n'
 import useScrollToIdOnLoad from '@/shared/hooks/use-scroll-to-id-on-load'
+import { DsPageAccountMenuWithProviders } from '@/shared/components/navbar/ds-page-account-menu'
 // overleaf-lab: BYO table/editor styles were only imported by the admin page,
 // so this page shipped with zero module CSS — import the shared stylesheet here too.
 import '../../stylesheets/llm-settings.scss'
@@ -52,6 +53,9 @@ export default function LLMSettingsPage() {
                                     </li>
                                 </ul>
                             </nav>
+                            {/* 2026-09 (P, owner): down-left account menu (.ds-nav-sidebar-lower)
+                                — the same shared menu as the golden /admin/site (was missing). */}
+                            <DsPageAccountMenuWithProviders rootId="llm-user-account-menu" />
                             <OLPageContentCard className="llm-user-settings__content">
                                 <div className="page-header">
                                     <h1>{t('llm_settings', 'LLM Settings')}</h1>

@@ -4,6 +4,7 @@ block entrypointVar
 	- entrypoint = 'modules/llm/pages/user/llm-settings'
 
 block vars
+	- const hideNavLogo = true
 	// 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title on app/admin/user pages.
 	- const hideBrandTitle = true
 	- const bodyDataPage = 'llm-settings'
@@ -17,6 +18,9 @@ block append meta
 	// the page follows the overall theme (dark/light) like /admin/site &
 	// /user/mysettings (was stuck on the layout default).
 	meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
+	meta(name='ol-userSettings' data-type='json' content=userSettings)
+	meta(name='ol-overallThemes' data-type='json' content=overallThemes)
+
 	script(type="text/javascript" nonce=scriptNonce).
 		(function () {
 		function apply() {

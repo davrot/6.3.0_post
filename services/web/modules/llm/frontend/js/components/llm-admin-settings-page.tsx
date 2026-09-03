@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import getMeta from '@/utils/meta'
 import { postJSON } from '@/infrastructure/fetch-json'
 import useAsync from '@/shared/hooks/use-async'
+import { DsPageAccountMenuWithProviders } from '@/shared/components/navbar/ds-page-account-menu'
 import OLButton from '@/shared/components/ol/ol-button'
 import OLFormGroup from '@/shared/components/ol/ol-form-group'
 import OLFormLabel from '@/shared/components/ol/ol-form-label'
@@ -389,10 +390,14 @@ export default function LLMAdminSettingsPage() {
               ))}
           </nav>
 
+          {/* 2026-09 (P, owner): down-left account menu (.ds-nav-sidebar-lower) —
+              the same shared menu as the golden /admin/site (was missing). */}
+          <DsPageAccountMenuWithProviders rootId="llm-admin-account-menu" />
+
           <form onSubmit={handleSave} className="llm-admin-content">
               {/* ── Section 1: Features ── */}
               {/* overleaf-lab: master on/off switches per AI feature */}
-              <div className="llm-settings-section" data-sec="features">
+              <div className="card page-content-card llm-settings-section" data-sec="features">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">1</span>
                       <MaterialIcon type="toggle_on" />
@@ -427,7 +432,7 @@ export default function LLMAdminSettingsPage() {
               </div>
 
               {/* ── Section 2: API Connection ── */}
-              <div className="llm-settings-section" data-sec="connection">
+              <div className="card page-content-card llm-settings-section" data-sec="connection">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">2</span>
                       <MaterialIcon type="link" />
@@ -580,7 +585,7 @@ export default function LLMAdminSettingsPage() {
               </div>
 
               {/* ── Section 3: Model Selection ── */}
-              <div className="llm-settings-section" data-sec="models">
+              <div className="card page-content-card llm-settings-section" data-sec="models">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">3</span>
                       <MaterialIcon type="model_training" />
@@ -685,7 +690,7 @@ export default function LLMAdminSettingsPage() {
               </div>
 
               {/* ── Section 4: System Prompt ── */}
-              <div className="llm-settings-section" data-sec="prompt">
+              <div className="card page-content-card llm-settings-section" data-sec="prompt">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">4</span>
                       <MaterialIcon type="description" />
@@ -743,7 +748,7 @@ export default function LLMAdminSettingsPage() {
 
               {/* ── Section 6: AI Prompts ── */}
               {/* overleaf-lab: editable prompts behind each AI feature; empty means built-in default */}
-              <div className="llm-settings-section" data-sec="prompts">
+              <div className="card page-content-card llm-settings-section" data-sec="prompts">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">5</span>
                       <MaterialIcon type="edit_note" />
@@ -930,7 +935,7 @@ export default function LLMAdminSettingsPage() {
 
               {/* overleaf-lab (grammar port): Section 6 — availability force-offs +
                   LanguageTool server. Saved with the rest of the form. */}
-              <div className="llm-settings-section" data-sec="availability">
+              <div className="card page-content-card llm-settings-section" data-sec="availability">
                   <div className="llm-settings-section-header">
                       <span className="llm-settings-section-badge">6</span>
                       <MaterialIcon type="shield" />
@@ -1047,10 +1052,8 @@ export default function LLMAdminSettingsPage() {
                   <MaterialIcon type="save" className="me-1 ol-llm-admin-settings__icon-lg"  />
                   {t('save_settings', 'Save Settings')}
               </OLButton>
-          /* - Section 7: Usage (usage meter). 2026-09: INSIDE the form now,
-             so it renders in the same content column as the other tabs */
-          {/* ── Section 7: Usage (usage meter) — read-only, outside the form ── */}
-          <div className="llm-settings-section" data-sec="usage">
+          {/* Section 7: Usage (usage meter). Inside the form so it renders in the content column with the other tabs. */}
+          <div className="card page-content-card llm-settings-section" data-sec="usage">
               <div className="llm-settings-section-header">
                   <span className="llm-settings-section-badge">7</span>
                   <MaterialIcon type="insights" />

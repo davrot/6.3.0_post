@@ -114,7 +114,6 @@ export function UserListDsNav() {
                 </div>
               </main>
             </div>
-            <Footer {...footerProps} />
           </div>
           <CookieBanner />
         </div>

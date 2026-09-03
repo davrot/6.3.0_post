@@ -12,7 +12,9 @@
     "start": "node app/src/server.mjs"
   },
   "dependencies": {
-    "@overleaf/logger": "*"
+    "@overleaf/logger": "*",
+    "express": "*",
+    "webdav": "*"
   },
   "devDependencies": {
     "vitest": "^2.0.0",

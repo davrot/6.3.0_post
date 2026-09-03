@@ -28,6 +28,7 @@ import Settings from '@overleaf/settings'
 import logger from '@overleaf/logger'
 import SessionManager from '../../../../app/src/Features/Authentication/SessionManager.mjs'
 import { User } from '../../../../app/src/models/User.mjs'
+import UserSettingsHelper from '../../../../app/src/Features/Project/UserSettingsHelper.mjs'
 import { expressify } from '@overleaf/promise-utils'
 import { encryptSecret, normalizeStoredSecret, storedToPlaintext } from './LLMCrypto.mjs'
 import { normalizeProviderSpec, chatText, listModels, detectProviderType, PROVIDER_TYPES, assertPublicLlmBaseUrl } from './LLMClient.mjs'
@@ -461,6 +462,11 @@ async function llmSettingsPage(req, res) {
             llmSettings: { allowed: allowUser },
         },
         featureFlags: { chatEnabled: true, completionEnabled: true },
+        // 2026-09 (P, owner): shared down-left account menu (ThemeToggle) reads
+        // its theme from ol-userSettings — provide the local like the golden pages.
+        userSettings: userDoc
+            ? await UserSettingsHelper.buildUserSettings(req, res, userDoc)
+            : { user: {} },
         // 2026-09: proper page <title> + blue user-settings nav gradient.
         title: 'LLM Settings',
         blueNav: true,

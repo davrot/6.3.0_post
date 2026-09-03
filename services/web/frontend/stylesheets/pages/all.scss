@@ -58,6 +58,62 @@
 @import 'admin/admin';
 @import 'admin/project-url-lookup';
 @import '../../../modules/ce-ui/frontend/styles/ce-navbar-consistent'; // CE fork (round 10): app navbar = solid user pages / red admin consoles (both themes)
+// 2026-09 (P, owner): the gold card recipe (light surface in BOTH themes,
+// readable text/inputs) must be available on EVERY page family (llm pages,
+// mysettings, instance-stats, manage pages) — it was previously only loaded
+// inside the admin.scss bundle.
+@import '../../../modules/ce-ui/frontend/styles/ce-admin-ui';
+// 2026-09 (P/7, owner): the down-left account menu (.ds-nav-icon-dropdown,
+// .ds-nav-sidebar-lower) is part of the gold DS-nav family — make its look
+// GLOBAL so /admin/project (broken), /admin/llm/settings, /user/llm-settings
+// and /user/notification-preferences all render it exactly like /admin/site.
+// The --ds-nav-* tokens come from project-list-ds-nav.scss (loaded on every
+// page, theme-aware).
+.user-ds-nav-page,
+.project-ds-nav-page {
+  .ds-nav-sidebar-lower {
+    padding: var(--spacing-05, 1rem) var(--spacing-08, 2rem) 0
+      var(--spacing-05, 1rem);
+    border-top: solid 1px transparent;
+  }
+
+  .ds-nav-icon-dropdown {
+    .dropdown-toggle {
+      color: var(--ds-nav-color, rgb(96, 105, 122));
+      background: none;
+      height: 44px;
+      width: 44px;
+      padding: 0;
+      overflow: hidden;
+      border-radius: 6px;
+
+      &:hover {
+        background-color: var(--ds-nav-hover-bg, rgba(125, 125, 125, 0.1));
+      }
+
+      &.show {
+        background-color: var(--ds-nav-active-bg, var(--green-70));
+        color: var(--ds-nav-active-color, var(--green-10));
+      }
+
+      &::after {
+        display: none;
+      }
+
+      > div {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    .dropdown-menu {
+      background: var(--bg-primary-themed, var(--white));
+      color: var(--content-primary-themed, inherit);
+    }
+  }
+}
 @import '../../../modules/ce-ui/frontend/styles/ce-admin-shells'; // CE fork (round 11): /admin/panel + /user/mysettings shells + theme selector
 @import 'add-secondary-email-prompt';
 @import 'bonus';
@@ -77,7 +133,8 @@
 // app/admin/user settings page navbars (gold DS-nav pages already hide it;
 // the llm settings pages use the layout navbar and need it too).
 body[data-page=llm-settings] .navbar-default .nav-item-account,
-body[data-page=llm-admin] .navbar-default .nav-item-account {
+body[data-page=llm-admin] .navbar-default .nav-item-account,
+body[data-page=notification-prefs] .navbar-default .nav-item-account {
   display: none !important;
 }
 
@@ -117,4 +174,60 @@ footer.fat-footer,
 body[data-page='admin-panel'] .thin-footer,
 body[data-page='instance-stats'] .thin-footer {
   display: none !important;
+}
+
+// 2026-09 (S+P, owner): /user/notification-preferences left column —
+// mirrors the LLM user-settings sidebar look (theme-aware via the same
+// tokens), with the down-left account menu slot.
+.notification-prefs__sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 1rem;
+  padding: 0.5rem;
+  border: 1px solid var(--wf-border-in, #dfe5ec);
+  border-radius: 10px;
+  background-color: var(--wf-row-hi, var(--bg-primary-themed, var(--white)));
+  color: var(--content-primary, #1b222c);
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  a {
+    display: block;
+    padding: 0.5rem 0.625rem;
+    border-radius: 7px;
+    color: var(--content-primary, #1b222c);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      background-color: rgba(40, 81, 143, 0.06);
+    }
+  }
+}
+
+.notification-prefs__content {
+  min-width: 0;
+  width: 100%;
+  max-width: 800px;
+}
+
+@media (max-width: 768px) {
+  .notification-prefs__layout {
+    flex-direction: column;
+  }
+
+  .notification-prefs__sidebar {
+    position: static;
+    width: 100%;
+  }
 }

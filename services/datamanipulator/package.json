@@ -12,7 +12,9 @@
     "lint:fix": "eslint app/ test/ --fix"
   },
   "dependencies": {
-    "@overleaf/logger": "*"
+    "@overleaf/logger": "*",
+    "express": "*",
+    "@overleaf/settings": "*"
   },
   "devDependencies": {
     "vitest": "^2.0.0",

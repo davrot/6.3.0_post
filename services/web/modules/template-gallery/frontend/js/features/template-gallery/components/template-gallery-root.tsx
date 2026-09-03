@@ -98,7 +98,6 @@ function TemplateGalleryChrome() {
               </main>
               </TemplateGalleryProvider>
             </div>
-            <Footer {...footerProps} />
           </div>
           <CookieBanner />
         </div>

@@ -88,7 +88,7 @@
 // overleaf-lab: dark-theme values for the --wf-* tokens. Top-level
 // [data-bs-theme=dark] (attribute on <html>, the same selector shape the app
 // itself uses) so the variables flip in place and everything below inherits.
-[data-bs-theme='dark'] {
+[data-bs-theme='dark'], body[data-theme='default'] {
     --wf-panel-bg: #1b222c;
     --wf-panel-text: #e2e8f0;
     --wf-panel-border: #2f3a4d;

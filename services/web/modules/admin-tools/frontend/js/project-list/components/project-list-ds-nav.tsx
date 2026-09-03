@@ -120,7 +120,6 @@ export function ProjectListDsNav() {
                 </div>
               </main>
             </div>
-            <Footer {...footerProps} />
           </div>
         </div>
       </div>

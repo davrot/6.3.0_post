@@ -177,7 +177,6 @@ export function ProjectListDsNav() {
                 )}
               </main>
             </div>
-            <Footer {...footerProps} />
           </div>
           <CookieBanner />
         </div>

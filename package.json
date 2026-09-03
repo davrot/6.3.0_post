@@ -233,7 +233,11 @@
     "tools/dependency-management",
     "tools/npm-overrides-helper",
     "tools/saas-e2e",
-    "tools/migrations"
+    "tools/migrations",
+    "services/datamanipulator",
+    "services/dropboxinterface",
+    "services/githubinterface",
+    "services/webdavinterface"
   ],
   "dependenciesMeta": {
     "@babel/helper-string-parser@7.27.1": {

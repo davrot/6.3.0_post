@@ -32,6 +32,7 @@ block append meta
 			title: (typeof hideBrandTitle !== 'undefined' && hideBrandTitle)
 				? undefined
 				: nav.title,
+			hideLogo: (typeof hideNavLogo !== 'undefined' && !!hideNavLogo) || false,
 			canDisplayAdminMenu,
 			canDisplayAdminRedirect,
 			canDisplayProjectUrlLookup,

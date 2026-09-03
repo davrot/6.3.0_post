@@ -30,7 +30,7 @@
     --wf-accent-soft: rgba(40, 81, 143, 0.08);
 }
 
-[data-bs-theme='dark'] {
+[data-bs-theme='dark'], body[data-theme='default'] {
     --wf-panel-bg: #1b222c;
     --wf-panel-text: #e2e8f0;
     --wf-panel-border: #2f3a4d;
@@ -190,7 +190,7 @@
     --wf-accent-soft: rgba(40, 81, 143, 0.10);
 }
 
-[data-bs-theme='dark'] .llm-wf-editor-scoped {
+[data-bs-theme='dark'], body[data-theme='default'] .llm-wf-editor-scoped {
     --wf-accent: #6597e0;
     --wf-accent-hi: #7dabec;
     --wf-accent-soft: rgba(101, 151, 224, 0.16);

@@ -4,6 +4,8 @@ import logger from '@overleaf/logger'
 import SessionManager from '../../../../app/src/Features/Authentication/SessionManager.mjs'
 import EmailHandler from '../../../../app/src/Features/Email/EmailHandler.mjs'
 import UserGetter from '../../../../app/src/Features/User/UserGetter.mjs'
+import { User } from '../../../../app/src/models/User.mjs'
+import UserSettingsHelper from '../../../../app/src/Features/Project/UserSettingsHelper.mjs'
 import Errors from '../../../../app/src/Features/Errors/Errors.js'
 import * as Path from 'node:path'
 import { parseReq, z } from '../../../../app/src/infrastructure/Validation.mjs'
@@ -49,10 +51,18 @@ async function globalPreferencesPage(req, res, next) {
     const preferences = await NotificationsPreferencesHandler.promises.getGlobalPreferences(
       userId
     )
+    // 2026-09 (S+P, owner): shared down-left account menu (ThemeToggle) reads
+    // its theme from ol-userSettings — provide the local like the golden pages.
+    let userSettings = {}
+    if (req?.user) {
+      const user = (await User.findById(req.user._id, 'ace')) ?? req.user
+      userSettings = await UserSettingsHelper.buildUserSettings(req, res, user)
+    }
     res.render(
       Path.resolve(import.meta.dirname, '../views/user/notification-preferences'),
       {
         title: 'email_preferences',
+        userSettings,
         // The checkbox is an opt-IN ("Notifications on project activity")
         // while the stored flag is an opt-OUT (muteAllNotifications), so the
         // page renders the negated value.

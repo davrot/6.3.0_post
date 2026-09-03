@@ -9,7 +9,10 @@
 // text to the light token palette + one clean type scale (16/14/18px) in
 // both themes so the CE+ vocabulary reads consistently everywhere.
 // ---------------------------------------------------------------------------
-.ce-admin-card {
+// .page-content-card (2026-09 owner P): the gold OLPageContentCard used by
+// mysettings / llm settings pages — same light-surface recipe.
+.ce-admin-card,
+.page-content-card {
   font-size: 1rem;
   // R11-1 (UI round 11, items 13): the card SURFACE itself must be pinned
   // to the light palette in both themes — in dark mode the theme body

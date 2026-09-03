@@ -18,6 +18,7 @@ block entrypointVar
 	- entrypoint = 'modules/instance-stats/pages/instance-stats'
 
 block vars
+	- const hideNavLogo = true
 	// 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title on app/admin/user pages.
 	- const hideBrandTitle = true
 	- isWebsiteRedesign = true
@@ -100,13 +101,13 @@ block content
 								//- render on load at real width, and the left column is
 								//- anchor navigation that scrolls to each H2 (user re-report
 								//- 3/4: "anchors don't connect to content; h2s are not there").
-								section#user.instance-stats-section
+								section#user.instance-stats-section.card.page-content-card.mb-4
 									h2 User
 									.row(style='height:400px')
 										.col-md-4#active-users
 										.col-md-4#new-users
 										.col-md-4#user-count
-								section#project.instance-stats-section
+								section#project.instance-stats-section.card.page-content-card.mb-4
 									h2 Project
 									.row(style='height:400px')
 										.col-md-4#active-projects
@@ -114,19 +115,19 @@ block content
 										.col-md-4#file-count
 									.row(style='height:400px')
 										.col-md-4#shared-projects
-								section#storage.instance-stats-section
+								section#storage.instance-stats-section.card.page-content-card.mb-4
 									h2 Storage
 									.row(style='height:400px')
 										.col-md-4#mongodb-storage
 										.col-md-4#overleaf-storage
 										.col-md-4#redis-storage
-								section#system.instance-stats-section
+								section#system.instance-stats-section.card.page-content-card.mb-4
 									h2 System
 									.row(style='height:400px')
 										.col-md-4#disk-usage
 										.col-md-4#ram-usage
 										.col-md-4#cpu-load
-								section#settings.instance-stats-section
+								section#settings.instance-stats-section.card.page-content-card.mb-4
 									h2 Alert settings
 									#instance-stats-settings
 					// Footer removed (2026-09 owner request): no footer on /admin/instance-stats.
