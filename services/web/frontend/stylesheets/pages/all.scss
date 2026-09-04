@@ -247,3 +247,78 @@ body[data-page='library'] .navbar-logo,
 body[data-page='library'] .navbar-title {
   display: none !important;
 }
+
+// ===========================================================================
+// 2026-09-04 (live-06 items 6/8/9/11): golden /admin/site per-section sub
+// card — SHARED global definition so pug settings pages (notification
+// preferences) and React settings pages (LLM settings, mysettings) all render
+// the same card (badge pill + title + optional header switch, light surface,
+// readable inputs in both themes). Single source: keep it ONLY here.
+.settings-sub-card {
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgb(219, 224, 232);
+  background-color: #fff;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid rgb(219, 224, 232);
+    background-color: #fff;
+
+    strong {
+      font-size: 1rem;
+      font-weight: 600;
+      color: rgb(27, 34, 44);
+    }
+
+    .ms-auto {
+      margin-left: auto;
+      margin-right: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: rgb(27, 34, 44);
+    }
+  }
+
+  .settings-card-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background-color: #28518f;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .card-body {
+    padding: 1.25rem;
+    color: rgb(27, 34, 44);
+  }
+
+  .settings-card-desc {
+    margin-bottom: 1rem;
+  }
+
+  /* inputs stay light and readable on the pinned card in BOTH themes */
+  .form-control,
+  .form-select {
+    background-color: #fff;
+    color: rgb(27, 34, 44);
+    border-color: rgb(219, 224, 232);
+    color-scheme: light;
+  }
+
+  .form-text,
+  .text-muted {
+    color: rgb(73, 83, 101);
+  }
+}

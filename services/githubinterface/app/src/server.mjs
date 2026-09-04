@@ -40,9 +40,27 @@ const WORK_ROOT = Path.resolve(
   process.env.GITHUBINTERFACE_WORKDIR_ROOT || Path.join(os.tmpdir(), 'ghif')
 )
 try {
-  fs.mkdirSync(WORK_ROOT, { recursive: true, mode: 0o700 })
+  // GHI-perms (6.3.0 port, live-06 item 5): when this service CREATES the work root
+  // (unlike the shared sticky dir on the CEP host), it must stay open for the web
+  // process, which writes project files here under a DIFFERENT uid.
+  fs.mkdirSync(WORK_ROOT, { recursive: true, mode: 0o777 })
 } catch (err) {
   logger.warn({ err, WORK_ROOT }, 'could not pre-create githubinterface work root')
+}
+
+// GHI-perms (6.3.0 port, live-06 item 5b): the shared work dir is written by BOTH
+// the web process (clone target, project-file writes, commits) and this sidecar
+// (clone/commit/push, creating files as its own uid). After every operation that
+// creates or replaces files, open the tree up so the other uid can read+write it
+// (sticky shared directory semantics). Best-effort: a chmod hiccup must never fail
+// the git operation itself.
+function openUpWorkDir(dir) {
+  try {
+    return pExecFile('chmod', ['-R', 'a+rwX', dir], { timeout: 10000 })
+  } catch (err) {
+    logger.warn({ dir, err: err.message }, 'openUpWorkDir: chmod failed (continuing)')
+    return Promise.resolve()
+  }
 }
 function resolveWorkDir(value) {
   if (typeof value !== 'string' || !value.startsWith('/')) {
@@ -251,7 +269,8 @@ app.post('/clone', async (req, res) => {
       target_dir, 
       ref 
     }, 'Repository cloned successfully')
-    
+
+    await openUpWorkDir(target)
     res.json({ success: true, message: 'Repository cloned successfully' })
   } catch (err) {
     logger.error({ err, repo_url, ref, target_dir }, 'Git clone failed')
@@ -322,6 +341,7 @@ app.post('/pull', async (req, res) => {
       ref 
     }, 'Git pull completed')
     
+    await openUpWorkDir(workDir)
     res.json({ success: true, message: 'Pull completed successfully' })
   } catch (err) {
     logger.error({ err, dir, remote, ref }, 'Git pull failed')
@@ -396,6 +416,7 @@ app.post('/commit', async (req, res) => {
       fileCount: files.length 
     }, 'Git commit created')
     
+    await openUpWorkDir(workDir)
     res.json({ success: true, commit_sha: commitSha })
   } catch (err) {
     logger.error({ err, dir, message, fileCount: files?.length || 0 }, 'Git commit failed')
@@ -648,6 +669,45 @@ app.post('/orgs', async (req, res) => {
 })
 
 /**
+ * GHI-reuse (6.3.0 port, live-06 item 5a): "name already exists on this account"
+ * (GitHub 422 / GitLab 409) means the user ALREADY has a repo with this name.
+ * Instead of surfacing the raw API error, verify access with the same token and
+ * hand the existing repo back as the export target (the web flow then clones it,
+ * commits the project snapshot on top and pushes — a valid fast-forward).
+ */
+async function tryReuseExistingRepo({ base, family, name, org, username, token }) {
+  try {
+    const owner = org || username
+    let r, j
+    if (family === 'gitlab') {
+      r = await fetch(`${base}/projects/${encodeURIComponent(owner + ':' + name)}`, {
+        headers: apiHeaders(token, base)
+      })
+      if (!r.ok) return null
+      j = await r.json()
+      return {
+        full_name: j.path_with_namespace || `${owner}/${name}`,
+        default_branch: j.default_branch || 'main',
+        reused: true
+      }
+    }
+    r = await fetch(`${base}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, {
+      headers: apiHeaders(token, base)
+    })
+    if (!r.ok) return null
+    j = await r.json()
+    return {
+      full_name: j.full_name || `${owner}/${name}`,
+      default_branch: j.default_branch || 'main',
+      reused: true
+    }
+  } catch (err) {
+    logger.warn({ err: err.message, name }, 'tryReuseExistingRepo failed')
+    return null
+  }
+}
+
+/**
  * POST /create-repo - create a repository on the git server
  */
 app.post('/create-repo', async (req, res) => {
@@ -683,6 +743,15 @@ app.post('/create-repo', async (req, res) => {
     const r = await fetch(url, { method: 'POST', headers: apiHeaders(token, base), body: JSON.stringify(body) })
     const text = await r.text()
     if (!r.ok) {
+      // GHI-reuse (live-06 item 5a): the repo name is already taken on this
+      // account — link the EXISTING repo instead of failing the export.
+      if (r.status >= 400 && r.status < 500) {
+        const reused = await tryReuseExistingRepo({ base, family, name, org, username, token })
+        if (reused) {
+          logger.info({ name, reused: reused.full_name }, 'repo name already exists — linking existing repo')
+          return res.json(reused)
+        }
+      }
       return res.status(r.status).json({ error: scrubDetail(text, token).slice(0, 500) || `HTTP ${r.status}` })
     }
     let json = {}

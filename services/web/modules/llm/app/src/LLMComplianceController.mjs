@@ -671,6 +671,97 @@ function estimateTokens(text) {
     return Math.ceil(String(text || '').length / REVIEW_CHARS_PER_TOKEN)
 }
 
+// overleaf-lab (6.3.0 port, live-06 item 4): hard cap on how many chunks one
+// review may use (a 2 MB document against a 4k context must not become 500 passes).
+const MAX_REVIEW_CHUNKS =
+    Number.parseInt(process.env.LLM_REVIEW_MAX_CHUNKS, 10) > 0
+        ? Number.parseInt(process.env.LLM_REVIEW_MAX_CHUNKS, 10)
+        : 64
+
+// overleaf-lab (6.3.0 port, live-06 item 4): delivery-method fix for documents larger
+// than the context window. Instead of refusing the review (too_long), split the
+// assembled project into the LARGEST chunks that individually fit, then run every
+// rubric requirement against each chunk and merge the findings (same merge path as
+// the [per-file] requirement branch). Split points, in order of preference:
+//   1. FILE boundaries (a chunk ideally ends where a source file ends),
+//   2. paragraph boundaries inside one over-long file,
+//   3. a hard word-boundary split as the last resort.
+// Every chunk keeps the same `% ===== FILE: ... =====` header shape the model sees
+// in the single-pass mode, so the prompt structure stays stable.
+function splitTextToFit(text, maxTokens) {
+    const t = String(text || '')
+    if (estimateTokens(t) <= maxTokens) return [t]
+    const parts = []
+    let cur = ''
+    const endCur = () => {
+        if (cur) {
+            parts.push(cur)
+            cur = ''
+        }
+    }
+    for (const p of t.split(/\n{2,}/)) {
+        const cand = cur ? cur + '\n\n' + p : p
+        if (estimateTokens(cand) <= maxTokens) {
+            cur = cand
+            continue
+        }
+        endCur()
+        if (estimateTokens(p) <= maxTokens) {
+            cur = p
+            continue
+        }
+        // one paragraph alone exceeds the budget: hard-split it at word boundaries
+        let rest = p
+        while (rest && estimateTokens(rest) > maxTokens) {
+            const ratio = maxTokens / Math.max(1, estimateTokens(rest))
+            let cut = Math.max(32, Math.floor(rest.length * ratio * 0.9))
+            const sp = rest.lastIndexOf(' ', cut)
+            if (sp > 16) cut = sp
+            parts.push(rest.slice(0, cut))
+            rest = rest.slice(cut).replace(/^\s+/, '')
+        }
+        cur = rest
+    }
+    endCur()
+    return parts.length ? parts : [t]
+}
+
+function buildChunks(strippedDocs, budgetTokens) {
+    const chunks = []
+    let cur = null
+    const endCur = () => {
+        if (cur && cur.text.trim()) chunks.push(cur)
+        cur = null
+    }
+    for (const d of strippedDocs) {
+        const headerCost = estimateTokens(`% ===== FILE: ${d.path} =====`)
+        const bodyBudget = Math.max(256, budgetTokens - headerCost - 16)
+        if (estimateTokens(d.text) <= bodyBudget) {
+            if (!cur) {
+                cur = { path: d.path, text: d.text }
+            } else if (estimateTokens(cur.text + '\n\n' + d.text) <= budgetTokens) {
+                cur.text += '\n\n' + d.text
+                cur.path = 'project'
+            } else {
+                endCur()
+                cur = { path: d.path, text: d.text }
+            }
+            continue
+        }
+        // a single file is bigger than a whole chunk: split it inside its paragraphs
+        endCur()
+        const parts = splitTextToFit(d.text, bodyBudget)
+        parts.forEach((p, pi) =>
+            chunks.push({
+                path: parts.length > 1 ? `${d.path} (part ${pi + 1}/${parts.length})` : d.path,
+                text: p,
+            })
+        )
+    }
+    endCur()
+    return chunks.length ? chunks : [{ path: 'project', text: '' }]
+}
+
 // overleaf-lab: first regex that matches wins; returns null when none does.
 function firstNumber(text, patterns) {
     for (const pattern of patterns) {
@@ -924,8 +1015,66 @@ async function performReview(job) {
     // thorough pass may legitimately enumerate dozens of figures in its analysis, and
     // writing that enumeration out IS how the model verifies (starving it pushes the
     // work back into attention, which is what multi-pass exists to avoid).
-    const headroom = maxContextTokens - promptTokens - CONTEXT_SAFETY_MARGIN
-    const perPassBudget = Math.min(reviewMaxTokens, headroom)
+    //
+    // overleaf-lab (6.3.0 port, live-06 item 4): if the WHOLE document does not fit
+    // the context window, do NOT refuse (that was the "does not fit the review model
+    // context window" dead end on real theses). Split the document into the largest
+    // chunks that DO fit and review requirement-per-chunk, merging findings exactly
+    // like the [per-file] branch does.
+    const overheadNoDoc =
+        estimateTokens(prompts.reviewSystemPrompt) +
+        estimateTokens(rubric.guidelines) +
+        estimateTokens(scanHints)
+    let chunks = null
+    {
+        const fits =
+            maxContextTokens - promptTokens - CONTEXT_SAFETY_MARGIN >= MIN_ANSWER_TOKENS
+        if (!fits) {
+            const chunkBudget =
+                maxContextTokens -
+                overheadNoDoc -
+                CONTEXT_SAFETY_MARGIN -
+                MIN_ANSWER_TOKENS
+            if (chunkBudget < 2000) {
+                return {
+                    type: 'error',
+                    errorCode: 'too_long',
+                    message:
+                        'Even a single chunk of this document does not fit the review context window; raise the context window (or split the project)',
+                    documentTokensEstimate: promptTokens,
+                    maxContextTokens,
+                    reviewMaxTokens: MIN_ANSWER_TOKENS,
+                }
+            }
+            chunks = buildChunks(strippedDocs, chunkBudget)
+            if (chunks.length > MAX_REVIEW_CHUNKS) {
+                return {
+                    type: 'error',
+                    errorCode: 'too_long',
+                    message: `This document would need ${chunks.length} chunks to review (cap ${MAX_REVIEW_CHUNKS}); shorten the document or raise the context window`,
+                    documentTokensEstimate: promptTokens,
+                    maxContextTokens,
+                    reviewMaxTokens: MIN_ANSWER_TOKENS,
+                }
+            }
+            logger.info(
+                {
+                    projectId,
+                    chunks: chunks.length,
+                    maxChunkTokens: Math.max(...chunks.map(c => estimateTokens(c.text))),
+                    context: maxContextTokens,
+                },
+                '[LLM] compliance: document exceeds context window — reviewing in chunks'
+            )
+        }
+    }
+    const chunkMode = chunks !== null
+    const effectivePromptTokens = chunkMode
+        ? Math.max(...chunks.map(c => estimateTokens(c.text))) + overheadNoDoc
+        : promptTokens
+    const effectiveHeadroom =
+        maxContextTokens - effectivePromptTokens - CONTEXT_SAFETY_MARGIN
+    const perPassBudget = Math.min(reviewMaxTokens, effectiveHeadroom)
     if (perPassBudget < MIN_ANSWER_TOKENS) {
         // overleaf-lab: report the minimum reserve too. Without it the UI could only
         // show "prompt / limit", which can look like it fits while the refusal is
@@ -983,7 +1132,7 @@ async function performReview(job) {
     const passTimeoutMs = () => {
         const rates = effectiveRates()
         const worstCaseMs =
-            Math.round((promptTokens / rates.prefillTps) * 1000) +
+            Math.round((effectivePromptTokens / rates.prefillTps) * 1000) +
             Math.round((perPassBudget / rates.genTps) * 1000)
         return Math.max(REVIEW_MIN_TIMEOUT_MS, Math.round(worstCaseMs * 1.5))
     }
@@ -992,7 +1141,12 @@ async function performReview(job) {
     // requirement counts one pass per source file.
     let mainPassCount = requirements.reduce(
         (n, r) =>
-            n + (isPerFileRequirement(r) && strippedDocs.length > 1 ? strippedDocs.length : 1),
+            n +
+            (chunkMode
+                ? chunks.length
+                : isPerFileRequirement(r) && strippedDocs.length > 1
+                  ? strippedDocs.length
+                  : 1),
         0
     )
     // overleaf-lab: F6 — hard cap on passes per job. [per-file] requirements on a
@@ -1018,12 +1172,16 @@ async function performReview(job) {
         if (job.status === 'cancelled') {
             throw new Error('review cancelled between passes')
         }
-        const perFile = isPerFileRequirement(requirements[i]) && strippedDocs.length > 1
+        const perFile =
+            !chunkMode && isPerFileRequirement(requirements[i]) && strippedDocs.length > 1
         const requirement = stripPerFileMarker(requirements[i])
+        // overleaf-lab (6.3.0 port, live-06 item 4): sub-pass units = doc chunks in
+        // chunked mode, [per-file] requirement files otherwise, null = one full pass.
+        const units = chunkMode ? chunks : perFile ? strippedDocs : null
         // overleaf-lab: F6 — hard stop at the configured pass budget. This and
         // every remaining requirement are reported as 'skipped' below so the
         // report stays complete and honest about coverage.
-        const passCost = perFile ? strippedDocs.length : 1
+        const passCost = units ? units.length : 1
         if (completedPasses + passCost > MAX_PASSES_PER_JOB) {
             for (let k = i; k < requirements.length; k++) {
                 allItems.push({
@@ -1044,14 +1202,14 @@ async function performReview(job) {
         // cache prefix: the sub-pass prompts are small, so the total prefill is about
         // one extra read of the project. Lean by design: no retry (small prompts do
         // not truncate), a failed file becomes "n.a." for that file only.
-        if (perFile) {
+        if (units) {
             const fileResults = []
-            for (let f = 0; f < strippedDocs.length; f++) {
+            for (let f = 0; f < units.length; f++) {
                 if (job.status === 'cancelled') {
                     throw new Error('review cancelled between passes')
                 }
-                const doc = strippedDocs[f]
-                job.currentRequirement = `${requirement} (file ${f + 1}/${strippedDocs.length}: ${doc.path})`
+                const doc = units[f]
+                job.currentRequirement = `${requirement} (${chunkMode ? 'part' : 'file'} ${f + 1}/${units.length}: ${doc.path})`
                     .replace(/\s+/g, ' ')
                     .slice(0, 160)
                 const subBody = {
@@ -1061,7 +1219,9 @@ async function performReview(job) {
                         {
                             role: 'user',
                             content:
-                                `DOCUMENT (one file of a larger project):\n% ===== FILE: ${doc.path} =====\n${doc.text}\n\n` +
+                                `${chunkMode
+                                    ? 'DOCUMENT (one part of a larger project — review only this part):\n'
+                                    : 'DOCUMENT (one file of a larger project):\n'}% ===== FILE: ${doc.path} =====\n${doc.text}\n\n` +
                                 `GUIDELINES (check ONLY these, in THIS file only):\n${
                                     preamble ? `${preamble}\n` : ''
                                 }${requirement}`,
@@ -1408,6 +1568,28 @@ async function performReview(job) {
                 .replace(/\s+/g, ' ')
                 .slice(0, 160)
 
+            // overleaf-lab (6.3.0 port, live-06 item 4): chunked mode verifies
+            // against the chunk holding the findings quotes.
+            let verifyDocBlock = documentBlock
+            let verifyMissing = groundingByItem[idx].missing
+            if (chunkMode) {
+                let best = { missing: Infinity, ci: 0 }
+                chunks.forEach((c, ci) => {
+                    const gn = countUngroundedQuotes(
+                        finding.evidence,
+                        normalizeForMatch(c.text)
+                    )
+                    if (gn.missing < best.missing) {
+                        best = { missing: gn.missing, ci }
+                    }
+                })
+                const c = chunks[best.ci]
+                verifyDocBlock =
+                    `DOCUMENT (part ${best.ci + 1} of ${chunks.length} — holding the finding's quotes):\n` +
+                    `% ===== FILE: ${c.path} =====\n${c.text}\n\n`
+                verifyMissing = best.missing
+            }
+
             const verifyBody = {
                 model: reviewModel,
                 messages: [
@@ -1415,7 +1597,7 @@ async function performReview(job) {
                     {
                         role: 'user',
                         content:
-                            documentBlock +
+                            verifyDocBlock +
                             `FINDING (verify it against the DOCUMENT above):\n${JSON.stringify(
                                 {
                                     requirement: finding.requirement,
@@ -1424,8 +1606,8 @@ async function performReview(job) {
                                     suggestion: finding.suggestion,
                                 }
                             )}${
-                                groundingByItem[idx].missing > 0
-                                    ? `\n\nNOTE: a mechanical text search could NOT find ${groundingByItem[idx].missing} of the quoted passage(s) verbatim in the document. Treat those quotes as suspect.`
+                                verifyMissing > 0
+                                    ? `\n\nNOTE: a mechanical text search could NOT find ${verifyMissing} of the quoted passage(s) verbatim in this part of the document. Treat those quotes as suspect.`
                                     : ''
                             }`,
                     },
@@ -1573,6 +1755,7 @@ async function performReview(job) {
             rubric: { id: rubric.id, name: rubric.name },
             model: reviewModel,
             documentTokensEstimate: promptTokens,
+            chunkCount: chunkMode ? chunks.length : 0,
             maxContextTokens,
             summary,
             items: allItems,

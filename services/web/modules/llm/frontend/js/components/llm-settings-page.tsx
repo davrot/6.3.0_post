@@ -33,37 +33,106 @@ export default function LLMSettingsPage() {
     return (
         isReady ? (
             <UserProvider>
-                <OLPageContentCard className="llm-user-settings__content">
-                    <div className="page-header">
-                        <h1>{t('llm_settings', 'LLM Settings')}</h1>
+                {/* 2026-09-04 (live-06 #6): golden /admin/site layout — one
+                    card per settings block (badge pill + title header, muted
+                    description, fields in the body), instead of one large
+                    flat card. Pinned light surface via llm-settings.scss. */}
+                <div className="llm-user-settings">
+                    <div className="llm-settings-header">
+                        <h1 className="llm-settings-header-title">
+                            {t('llm_settings', 'LLM Settings')}
+                        </h1>
+                        <p className="llm-settings-header-desc">
+                            {t(
+                                'llm_user_settings_desc',
+                                'Your personal AI assistant settings: your own API providers, grammar checking, review rubrics and token usage.'
+                            )}
+                        </p>
                     </div>
-                    <div id="llm-user-general">
-                        <LLMSettingsSection initialSettings={user.llmSettings} />
+
+                    <div
+                        id="llm-user-general"
+                        className="card page-content-card settings-sub-card mb-4"
+                    >
+                        <div className="card-header">
+                            <strong>{t('general_settings', 'General')}</strong>
+                        </div>
+                        <div className="card-body">
+                            <p className="text-muted settings-card-desc">
+                                {t(
+                                    'llm_general_desc',
+                                    'Your own LLM providers and model selection (BYO key). Leave everything off to use the instance configuration only.'
+                                )}
+                            </p>
+                            <LLMSettingsSection initialSettings={user.llmSettings} />
+                        </div>
                     </div>
+
                     {/* overleaf-lab (grammar port): per-user grammar checking
                         (mode + language + blocked rules). The per-project picky
                         toggle lives in the project Settings modal (Spelling
                         section) — it needs a live project context, which this
                         user-scoped page does not provide. */}
-                    <div className="ol-llm-admin-settings__mt-xl" id="llm-user-grammar">
-                        <h2>{t('grammar_checking', 'Grammar Checking')}</h2>
-                        <GrammarSettingsSection />
+                    <div
+                        id="llm-user-grammar"
+                        className="card page-content-card settings-sub-card mb-4"
+                    >
+                        <div className="card-header">
+                            <strong>{t('grammar_checking', 'Grammar Checking')}</strong>
+                        </div>
+                        <div className="card-body">
+                            <p className="text-muted settings-card-desc">
+                                {t(
+                                    'grammar_checking_desc',
+                                    'Language and grammar feedback while you write. The per-project toggle lives in the project Settings modal.'
+                                )}
+                            </p>
+                            <GrammarSettingsSection />
+                        </div>
                     </div>
+
                     {/* overleaf-lab (2026-08-27, owner request): the compliance
                         review rubrics are USER-SCOPED and configured here, in
                         every user's own LLM settings — the former global admin
                         section is gone. */}
-                    <div className="ol-llm-admin-settings__mt-xl" id="llm-user-compliance">
-                        <h2>{t('compliance_review', 'Compliance Review')}</h2>
-                        <LLMComplianceSettings />
+                    <div
+                        id="llm-user-compliance"
+                        className="card page-content-card settings-sub-card mb-4"
+                    >
+                        <div className="card-header">
+                            <strong>{t('compliance_review', 'Compliance Review')}</strong>
+                        </div>
+                        <div className="card-body">
+                            <p className="text-muted settings-card-desc">
+                                {t(
+                                    'compliance_review_desc',
+                                    'Review rubrics applied by the whole-document AI review ("Run review" in the AI Assistant rail).'
+                                )}
+                            </p>
+                            <LLMComplianceSettings />
+                        </div>
                     </div>
+
                     {/* overleaf-lab (usage meter, 2026-08-28, owner request): my own token
                         usage — both the site lane and my personal BYO rows count. */}
-                    <div className="ol-llm-admin-settings__mt-xl" id="llm-user-usage">
-                        <h2>{t('llm_usage', 'Usage')}</h2>
-                        <LLMUsageMeter scope="user" />
+                    <div
+                        id="llm-user-usage"
+                        className="card page-content-card settings-sub-card mb-4"
+                    >
+                        <div className="card-header">
+                            <strong>{t('llm_usage', 'Usage')}</strong>
+                        </div>
+                        <div className="card-body">
+                            <p className="text-muted settings-card-desc">
+                                {t(
+                                    'llm_usage_desc',
+                                    'Your token usage across the shared instance and your own BYO providers.'
+                                )}
+                            </p>
+                            <LLMUsageMeter scope="user" />
+                        </div>
                     </div>
-                </OLPageContentCard>
+                </div>
             </UserProvider>
         ) : null
     )

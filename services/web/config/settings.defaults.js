@@ -1090,6 +1090,14 @@ module.exports = {
     ],
     contactUsModal: [],
     sourceEditorExtensions: [
+      // [I] bib-editor: in-project .bib visual editor — the extension PARSES the
+      // document and emits entries to the React context. 6.3.0 port (live-06 item 1):
+      // missing from this list, so the Visual panel opened but detected NO bib items
+      // (nothing ever emitted the entries event).
+      Path.resolve(
+        __dirname,
+        '../modules/bib-editor/frontend/js/extensions/bib-editor-extension'
+      ),
       // overleaf-lab (LLM port): inline LaTeX completion.
       Path.resolve(
         __dirname,
@@ -1441,6 +1449,31 @@ module.exports = {
   },
 
   enablePandocConversions: process.env.ENABLE_PANDOC_CONVERSIONS === 'true',
+
+  // 6.3.0 port (live-06 item 3): CE feature FLAGS live in splitTestOverrides — the
+  // non-SaaS path in SplitTestHandler._getNonSaasAssignment() reads exactly this.
+  // The File → Download menu's "Export as Word / Markdown / HTML" items are gated
+  // behind the three export-* flags, so without these overrides the items never
+  // render even though the pandoc pipeline is enabled. Wire them to the same env.
+  // 6.3.0 port (live-06 item 3 + live-07 item 2): CE feature FLAGS live in
+  // splitTestOverrides — the non-SaaS path in SplitTestHandler._getNonSaasAssignment()
+  // reads exactly this. The File → Download menu's "Export as Word / Markdown /
+  // HTML" items are gated behind the three export-* flags, and the New Project
+  // dropdown's "Import Word document" / "Import Markdown file" items are gated
+  // behind the two import-* flags — without these overrides the items never
+  // render even though the pandoc pipeline is enabled. Wire them to the same env.
+  splitTestOverrides: {
+    'export-docx':
+      process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+    'export-markdown':
+      process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+    'export-html':
+      process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+    'import-docx':
+      process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+    'import-markdown':
+      process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+  },
 
   oauthProviders: {
     ...(process.env.EXTERNAL_AUTH &&

@@ -95,7 +95,26 @@
 .bibtex-import-form .form-label,.bibtex-import-form .form-text { color:var(--content-secondary-themed) }
 :root { --bibtex-already-in-library-color:var(--yellow-50);--bibtex-already-in-library-bg-color:var(--yellow-10) }
 [data-theme=default] .modal-themed { --bibtex-already-in-library-color:var(--yellow-20);--bibtex-already-in-library-bg-color:var(--yellow-70) }
-.bibtex-import-preview-card-check { padding-top:var(--spacing-05) }
+.bibtex-import-preview-card-check {
+  /* 6.3.0 port (live-06 #2 / live-07 #1, re-done): the checkbox must sit exactly
+     on the SAME row as the citation-key badge. Instead of guessing a line
+     height (the first pass assumed 1.2 — the real inherited body line-height is
+     1.71429), MIRROR the key's box properties: same margin-top (var(--spacing-04)),
+     same font-size (var(--spacing-05)), same vertical padding (var(--spacing-01))
+     and the same inherited line-height. The flex centreing then puts the 16px
+     checkbox box in exactly the same vertical box as the key text — pixel
+     aligned for any future token changes. */
+  display:flex;
+  align-items:center;
+  padding-top:0;
+  padding-bottom:0;
+  padding-left:var(--spacing-01);
+  padding-right:var(--spacing-01);
+  margin-top:var(--spacing-04);
+  font-size:var(--spacing-05);
+  line-height:inherit;
+  flex-shrink:0
+}
 .bibtex-import-preview-card { border:1px solid var(--border-divider-themed);border-radius:var(--border-radius-large);display:flex;gap:var(--spacing-06);padding:var(--spacing-04) var(--spacing-06) }
 .bibtex-import-preview-card-content { display:flex;flex:1;flex-direction:column }
 .bibtex-import-preview-card-details { display:flex;flex-direction:column;gap:var(--spacing-03);padding-top:var(--spacing-04) }

@@ -25,12 +25,20 @@ if (process.env.GITHUB_SYNC_ENABLED?.toLowerCase() === 'true' ||
                     process.env.GIT_SYNC_SERVER_URL ||
                     'https://github.com'
 
+  // 6.3.0 port (live-06 item 10): the OAuth redirect_uri MUST match the callback
+  // URL registered in the GitHub app. Default it to the site's PUBLIC url (fixes
+  // the `http://localhost/...` fallback when OVERLEAF_SITE_URL is unset), and allow
+  // an explicit operator override.
+  const callbackURL =
+    process.env.GITHUB_SYNC_CALLBACK_URL ||
+    `${siteUrl}/user/github-sync/oauth2/callback`
+
   Settings.githubSync = {
     enabled: true,
     serverUrl: serverUrl.replace(/\/$/, ''),
     clientID: process.env.GITHUB_SYNC_CLIENT_ID || process.env.GIT_SYNC_CLIENT_ID,
     clientSecret: process.env.GITHUB_SYNC_CLIENT_SECRET || process.env.GIT_SYNC_CLIENT_SECRET,
-    callbackURL: `${siteUrl}/user/github-sync/oauth2/callback`,
+    callbackURL,
   }
 
   // Delete project sync state from mongo (hook 'projectExpired')

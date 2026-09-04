@@ -5,14 +5,14 @@ export default function HotkeysModalBottomText() {
   return (
     <div className="hotkeys-modal-bottom-text">
       <Trans
-        i18nKey="a_more_comprehensive_list_of_keyboard_shortcuts"
+        i18nKey="kb_bottom_manage"
         components={[
           // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
+          // live-07 #5 (owner): this link now points at the user's own
+          // key-bindings settings (Default / Vim / Emacs).
           <a
             onClick={() => eventTracking.sendMB('left-menu-hotkeys-template')}
-            href="https://www.overleaf.com/articles/overleaf-keyboard-shortcuts/qykqfvmxdnjf"
-            target="_blank"
-            rel="noreferrer"
+            href="/user/mysettings#key-bindings"
           />,
         ]}
       />

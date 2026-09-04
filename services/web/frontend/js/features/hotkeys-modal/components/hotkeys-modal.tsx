@@ -12,6 +12,8 @@ import OLButton from '@/shared/components/ol/ol-button'
 import OLRow from '@/shared/components/ol/ol-row'
 import OLCol from '@/shared/components/ol/ol-col'
 import { useFeatureFlag } from '@/shared/context/split-test-context'
+import HotkeysModalKeybindingsSection from './hotkeys-modal-keybindings-section'
+import { Hotkey } from './hotkey'
 
 export default memo(function HotkeysModal({
   animation = true,
@@ -44,6 +46,9 @@ export default memo(function HotkeysModal({
       </OLModalHeader>
 
       <OLModalBody className="hotkeys-modal">
+        {/* live-07 #5: show the active per-user keymap (Default / Vim / Emacs)
+            + its key combos, with a manage link to /user/mysettings. */}
+        <HotkeysModalKeybindingsSection isMac={isMac} />
         <h3>{t('common')}</h3>
 
         <OLRow>
@@ -216,17 +221,4 @@ export default memo(function HotkeysModal({
   )
 })
 
-function Hotkey({
-  combination,
-  description,
-}: {
-  combination: string
-  description: string
-}) {
-  return (
-    <div className="hotkey" data-test-selector="hotkey">
-      <span className="combination">{combination}</span>
-      <span className="description">{description}</span>
-    </div>
-  )
-}
+

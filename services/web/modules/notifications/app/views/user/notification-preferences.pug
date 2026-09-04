@@ -98,34 +98,37 @@ block content
 								data-ol-async-form
 								data-ol-reload-on-success
 							)
-								input(name='_csrf' type='hidden' value=csrfToken)
 
-								.card.page-content-card.setting-container.mb-4#notification-prefs-activity
-									input(name='muteAllNotifications' id='muteAllNotifications' type='checkbox' value='notificationsOn' checked=notificationsEnabled)
-									div
-										label.checkbox-label(for='muteAllNotifications')
-											h2.h4.mb-0 #{translate("notifications_on_project_activity")}
-										p #{translate("notifications_on_project_activity_description")}
+								// 2026-09-04 (live-06 #8/#9): golden /admin/site cards — switch in the
+								// card header, no floating/overlapping controls, NO “back to …” links.
+								.card.page-content-card.settings-sub-card.mb-4#notification-prefs-activity
+									.card-header
+										strong #{translate("notifications_on_project_activity")}
+										.d-flex.align-items-center.ms-auto
+											span.form-check-label.mb-0(for='muteAllNotifications') #{translate("enabled")}
+											.form-check.form-switch
+												input.form-check-input(name='muteAllNotifications' id='muteAllNotifications' type='checkbox' value='notificationsOn' checked=notificationsEnabled)
+									.card-body
+										p.mb-0 #{translate("notifications_on_project_activity_description")}
 
-								.card.page-content-card.setting-container.mb-4#notification-prefs-delay
-									input(name='notificationDelayMinutes' id='notificationDelayMinutes' type='number' min='1' max='10080' step='1' value=(notificationDelayMinutes != null ? notificationDelayMinutes : ''))
-									div
-										label.checkbox-label(for='notificationDelayMinutes')
-											h2.h4.mb-0 #{translate("notifications_delay_minutes_label")}
-										p #{translate("notifications_delay_description")}
-										p.text-muted #{translate("notifications_delay_server_default")} #{defaultDelayLabel}
+								.card.page-content-card.settings-sub-card.mb-4#notification-prefs-delay
+									.card-header
+										strong #{translate("notifications_delay_minutes_label")}
+									.card-body
+										p.settings-card-desc #{translate("notifications_delay_description")}
+										.d-flex.align-items-center.gap-3.mb-2
+											label.form-label.mb-0(for='notificationDelayMinutes') #{translate('notifications_delay_minutes_label')}
+											input.form-control.d-inline-block(name='notificationDelayMinutes' id='notificationDelayMinutes' type='number' min='1' max='10080' step='1' value=(notificationDelayMinutes != null ? notificationDelayMinutes : '') style='max-width: 9rem')
+										.p.form-text.mb-0 #{translate('notifications_delay_server_default')} #{defaultDelayLabel}
 
-								p #{translate("note_still_receives_important_emails")}
+										p.form-text.mb-0 #{translate("note_still_receives_important_emails")}
 
 								.d-flex.justify-content-end.mt-4
 									button.btn-primary.btn(type='submit' data-ol-disabled-inflight)
 										span #{translate("save")}
 
-							.page-separator
-							.d-flex.gap-3
-								a.btn.btn-secondary(href='/user/mysettings') #{translate("back_to_account_settings")}
-								a.btn.btn-secondary(href='/project') #{translate("back_to_your_projects")}
-				#notif-prefs-cookie-root
+						.page-separator
+			#notif-prefs-cookie-root
 
 	each file in entrypointScripts('modules/page-shells/pages/ds-settings-shell')
 		script(type='text/javascript' nonce=scriptNonce src=file)

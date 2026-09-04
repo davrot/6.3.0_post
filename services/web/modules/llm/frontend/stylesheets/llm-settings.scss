@@ -502,3 +502,138 @@
     margin-top: 1.75rem;
   }
 }
+
+// ===========================================================================
+// 6.3.0 port (live-06 items 6/7/11): GOLDEN LIGHT SURFACE.
+//
+// The /admin/site + /user/mysettings design language is cards PINNED LIGHT in
+// BOTH themes — white boxes, dark ink, readable inputs (the .ce-admin-card
+// recipe in ce-admin-ui.scss). The LLM settings content was built on flipping
+// theme tokens (--wf-row-hi, --bg-light-secondary, --content-secondary):
+// fine in light mode, broken in dark mode (dark panels over white cards,
+// pale text, dark input values — user reports round-6 #6/#7/#11).
+// Pin the whole LLM settings surface (user + admin) and every settings
+// sub-card to the same light palette in both themes, regardless of tokens.
+// ===========================================================================
+.llm-settings,
+.ol-llm-admin-settings,
+.llm-user-settings {
+  --lls-ink: rgb(27, 34, 44);
+  --lls-dim: rgb(73, 83, 101);
+  --lls-line: rgb(219, 224, 232);
+  --lls-surface: #ffffff;
+  --lls-surface-alt: #f4f6f8;
+
+  .llm-settings-header-title {
+    // Page-level (sits on the themed page background, NOT on a card):
+    // must FOLLOW the theme — dark ink in light mode, light ink in dark mode.
+    color: var(--content-primary-themed, rgb(27, 34, 44));
+  }
+  .llm-settings-header-desc,
+  .ol-llm-admin-settings__muted,
+  .ol-llm-admin-settings__help-before,
+  .ol-llm-admin-settings__chip-x,
+  .ol-llm-admin-settings__empty,
+  .llm-buo-empty {
+    // Same: page-level muted text follows the theme (was pinned dim →
+    // invisible dim-on-dark, the live #7 “font color” bug).
+    color: var(--content-secondary-themed, rgb(73, 83, 101));
+  }
+  .llm-settings-section-desc {
+    // Inside a pinned light card → keep dark ink.
+    color: var(--lls-dim);
+  }
+  .llm-settings-section,
+  .settings-sub-card,
+  .ol-llm-admin-settings__editor,
+  .ol-llm-admin-settings__empty,
+  .llm-buo-editor,
+  .llm-buo-empty,
+  .llm-buo-table,
+  .llm-settings table,
+  .llm-settings .table {
+    background-color: var(--lls-surface) !important;
+    border-color: var(--lls-line) !important;
+    color: var(--lls-ink);
+  }
+
+  .llm-settings-section-header,
+  .ol-llm-admin-settings__feature-title,
+  .ol-llm-admin-settings__model-row,
+  .ol-llm-admin-settings__chip,
+  .ol-llm-admin-settings__mono,
+  .ol-llm-admin-settings__mono-lg {
+    color: var(--lls-ink);
+  }
+
+  .ol-llm-admin-settings__feature-row {
+    background-color: var(--lls-surface);
+    border-bottom: 1px solid var(--lls-line);
+  }
+
+  /* chips / mono tags: light pill surfaces in both themes */
+  .ol-llm-admin-settings__chip,
+  .llm-buo-chip,
+  .ol-llm-admin-settings__mono,
+  .ol-llm-admin-settings__mono-lg {
+    background-color: var(--lls-surface-alt) !important;
+    border-color: var(--lls-line) !important;
+    color: var(--lls-ink) !important;
+  }
+
+  /* tables (BYO providers, usage meter, model list) — golden table recipe */
+  .llm-settings th,
+  .llm-settings .table th {
+    background-color: var(--lls-surface-alt) !important;
+    color: var(--lls-dim) !important;
+  }
+  .llm-settings td,
+  .llm-settings .table td {
+    color: var(--lls-ink) !important;
+    border-bottom-color: var(--lls-line) !important;
+  }
+
+  /* toggle switches: pinned track (off: gray, on: accent), white knob */
+  .ol-llm-admin-settings__switch {
+    background-color: #c3cbd4;
+    &.is-on {
+      background-color: #28518f;
+    }
+    .ol-llm-admin-settings__switch-knob {
+      background-color: #fff;
+    }
+  }
+
+  .ol-llm-admin-settings__link-btn {
+    color: #28518f;
+  }
+
+  /* inputs — the exact gold .page-content-card recipe */
+  .form-control,
+  .form-select {
+    background-color: #fff !important;
+    color: var(--lls-ink) !important;
+    border-color: var(--lls-line) !important;
+    color-scheme: light;
+
+    &::placeholder {
+      color: rgb(133, 140, 154);
+      opacity: 1;
+    }
+  }
+  .form-label,
+  .form-check-label,
+  .llm-settings-section label,
+  label {
+    color: var(--lls-ink) !important;
+  }
+  .form-text,
+  .text-muted {
+    color: var(--lls-dim) !important;
+  }
+}
+
+/* The golden /admin/site per-section sub-card (live-06 6/11) moved to the
+   global stylesheet so pug settings pages (e.g. notification preferences)
+   and React settings pages share one definition. */
+

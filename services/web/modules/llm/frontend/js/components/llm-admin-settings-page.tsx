@@ -382,7 +382,6 @@ export default function LLMAdminSettingsPage() {
               {/* overleaf-lab: master on/off switches per AI feature */}
               <div className="card page-content-card llm-settings-section" data-sec="features">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">1</span>
                       <MaterialIcon type="toggle_on" />
                       {t('llm_features', 'Features')}
                   </div>
@@ -417,7 +416,6 @@ export default function LLMAdminSettingsPage() {
               {/* ── Section 2: API Connection ── */}
               <div className="card page-content-card llm-settings-section" data-sec="connection">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">2</span>
                       <MaterialIcon type="link" />
                       {t('api_connection', 'API Connection')}
                       {testStatus === 'success' && (
@@ -570,7 +568,6 @@ export default function LLMAdminSettingsPage() {
               {/* ── Section 3: Model Selection ── */}
               <div className="card page-content-card llm-settings-section" data-sec="models">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">3</span>
                       <MaterialIcon type="model_training" />
                       {t('model_selection', 'Model Selection')}
                       {allModels.length > 0 && (
@@ -675,7 +672,6 @@ export default function LLMAdminSettingsPage() {
               {/* ── Section 4: System Prompt ── */}
               <div className="card page-content-card llm-settings-section" data-sec="prompt">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">4</span>
                       <MaterialIcon type="description" />
                       {t('system_prompt', 'System Prompt')}
                   </div>
@@ -733,7 +729,6 @@ export default function LLMAdminSettingsPage() {
               {/* overleaf-lab: editable prompts behind each AI feature; empty means built-in default */}
               <div className="card page-content-card llm-settings-section" data-sec="prompts">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">5</span>
                       <MaterialIcon type="edit_note" />
                       {t('ai_prompts', 'AI Prompts')}
                   </div>
@@ -920,7 +915,6 @@ export default function LLMAdminSettingsPage() {
                   LanguageTool server. Saved with the rest of the form. */}
               <div className="card page-content-card llm-settings-section" data-sec="availability">
                   <div className="llm-settings-section-header">
-                      <span className="llm-settings-section-badge">6</span>
                       <MaterialIcon type="shield" />
                       {t('services_availability', 'Services (availability)')}
                   </div>
@@ -1038,7 +1032,6 @@ export default function LLMAdminSettingsPage() {
           {/* Section 7: Usage (usage meter). Inside the form so it renders in the content column with the other tabs. */}
           <div className="card page-content-card llm-settings-section" data-sec="usage">
               <div className="llm-settings-section-header">
-                  <span className="llm-settings-section-badge">7</span>
                   <MaterialIcon type="insights" />
                   {t('llm_usage', 'Usage')}
               </div>
