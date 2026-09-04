@@ -1,25 +1,37 @@
 extends ../../../../../app/views/layout-react
+//- 2026-09-04 (R5#7, owner round-5) — STRUCTURAL REBUILD on the EXACT
+//- /user/mysettings golden DOM (blue user family). The previous bespoke
+//- .notification-prefs__* two-column render ("CSS still broken") is replaced
+//- by the shared DS-nav shell:
+//- shared React navbar INSIDE .user-ds-nav-page (DS-nav CSS applies);
+//- the golden LEFT COLUMN (.user-list-sidebar-wrapper-react) with section
+//-  links;
+//- the SHARED React account menu in .ds-nav-sidebar-lower (the dead static
+//-  #notif-prefs-account-root is gone);
+//- theme-aware dark/light via ace.overallTheme (shared chrome) — was
+//-  "still broken" / not theme-consistent before;
+//- the form itself (POST /user/notification-preferences, async) is
+//-  UNCHANGED — it now sits in the golden content column.
 
 block entrypointVar
 	- entrypoint = 'pages/user/notification-prefs'
 
 block vars
 	- const hideNavLogo = true
-	- isWebsiteRedesign = true
-	// 2026-09 (S, owner): join the user-settings family (/user/mysettings family)
-	// — blue gradient nav, no brand title, no footer, theme-aware. Was on the
-	// marketing website-redesign layout (public-page look + its own footer).
-	- const blueNav = true
-	// 2026-09 (8, owner): hides the navbar Account pill on this page — the user
-	// menu moves to the down-left sidebar slot (.ds-nav-sidebar-lower).
-	- const bodyDataPage = 'notification-prefs'
 	- const hideBrandTitle = true
+	- const bodyDataPage = 'notification-prefs'
+	- isWebsiteRedesign = true
+	// 2026-09 (S, owner): user-settings family — blue gradient nav, no footer.
+	- const blueNav = true
+	- const showThinFooter = false
+	// Golden parity: this page renders its own chrome within the DS-nav page.
+	- const suppressNavContentLinks = true
+	- const suppressNavbar = true
 	- const suppressFooter = true
 	- const suppressPugCookieBanner = true
 
 block append meta
-	// 2026-09 (S+P, owner): theme machinery from the gold /admin/site pattern
-	// (user-my-settings.pug) — the page follows the overall theme.
+	// Theme machinery from the gold /admin/site pattern (user-my-settings.pug).
 	meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
 	meta(name='ol-userSettings' data-type='json' content=userSettings)
 	meta(name='ol-overallThemes' data-type='json' content=overallThemes)
@@ -39,56 +51,81 @@ block append meta
 		  if (document.body) apply();
 		  else document.addEventListener('DOMContentLoaded', apply);
 		})();
+	//- R5#7: shell config consumed by page-shells/pages/ds-settings-shell.
+	meta(name='ol-dsSettingsShell' data-type='json' content=JSON.stringify({
+		navbarRootId: 'notif-prefs-navbar-root',
+		accountRootId: 'notif-prefs-shared-account-root',
+		cookieRootId: 'notif-prefs-cookie-root'
+	}))
+
+	script(type="text/javascript" nonce=scriptNonce).
+		window.__dsSettingsShell = {
+		navbarRootId: 'notif-prefs-navbar-root',
+		accountRootId: 'notif-prefs-shared-account-root',
+		cookieRootId: 'notif-prefs-cookie-root',
+		};
 
 block content
-	main#main-content.content
-		.container
-			// 2026-09 (S+P, owner): user-settings family layout — left column
-			// with the down-left SHARED account menu (.ds-nav-sidebar-lower,
-			// same component as the golden /admin/site), content in gold
-			// .page-content-card sections. The navbar Account pill is hidden
-			// (body[data-page=notification-prefs] CSS).
-			.d-flex.align-items-start.notification-prefs__layout
-				nav.notification-prefs__sidebar(aria-label=translate("notification_preferences"))
-					ul.list-unstyled
-						li
-							a(href='/user/notification-preferences') #{translate("notification_preferences")}
-					#notif-prefs-account-root
-				.flex-grow-1.notification-prefs__content.pl-4
-					.page-header
-						h1 #{translate("email_preferences")}
+	ol-admin-shell-marker(style='display:none' data-shell='notification-prefs')
+	.user-ds-nav-page.website-redesign.manage-extensions-page
+		#notif-prefs-navbar-root
+		.user-list-wrapper
+			.user-list-sidebar-wrapper-react.d-none.d-md-flex.manage-extensions-sidebar
+				nav.flex-grow.flex-shrink(role='navigation' aria-label=translate('notification_preferences'))
+					.user-list-sidebar-scroll
+						ul.list-unstyled.user-list-filters
+							li.dropdown-header #{translate('notification_preferences')}
+							li.ds-nav-page-nav-item
+								button(type='button' data-target='#notification-prefs-activity') #{translate('notifications_on_project_activity')}
+							li.ds-nav-page-nav-item
+								button(type='button' data-target='#notification-prefs-delay') #{translate('notifications_delay_minutes_label')}
+				.ds-nav-sidebar-lower
+					nav.d-flex.flex-row.gap-3.mb-2(aria-label='Account and help')
+						// R5#7: distinct from the legacy #notif-prefs-account-root that
+						// the old page entry probes for (it no-ops when absent).
+						#notif-prefs-shared-account-root
+			.user-ds-nav-content-and-messages
+				.user-ds-nav-content
+					.user-ds-nav-main
+						main(aria-labelledby='main-content')
+							.user-list-header-row
+								h1#main-content.user-list-title.text-truncate.d-none.d-md-block(tabindex='-1') #{translate('email_preferences')}
 
-				form.notification-settings-container(
-					name='notificationsForm'
-					action='/user/notification-preferences'
-					method='POST'
-					data-ol-async-form
-					data-ol-reload-on-success
-				)
-					input(name='_csrf' type='hidden' value=csrfToken)
+							form.notification-settings-container(
+								name='notificationsForm'
+								action='/user/notification-preferences'
+								method='POST'
+								data-ol-async-form
+								data-ol-reload-on-success
+							)
+								input(name='_csrf' type='hidden' value=csrfToken)
 
-					.card.page-content-card.setting-container.mb-4
-						input(name='muteAllNotifications' id='muteAllNotifications' type='checkbox' value='notificationsOn' checked=notificationsEnabled)
-						div
-							label.checkbox-label(for='muteAllNotifications')
-								h2.h4.mb-0 #{translate("notifications_on_project_activity")}
-							p #{translate("notifications_on_project_activity_description")}
+								.card.page-content-card.setting-container.mb-4#notification-prefs-activity
+									input(name='muteAllNotifications' id='muteAllNotifications' type='checkbox' value='notificationsOn' checked=notificationsEnabled)
+									div
+										label.checkbox-label(for='muteAllNotifications')
+											h2.h4.mb-0 #{translate("notifications_on_project_activity")}
+										p #{translate("notifications_on_project_activity_description")}
 
-					.card.page-content-card.setting-container.mb-4
-						input(name='notificationDelayMinutes' id='notificationDelayMinutes' type='number' min='1' max='10080' step='1' value=(notificationDelayMinutes != null ? notificationDelayMinutes : ''))
-						div
-							label.checkbox-label(for='notificationDelayMinutes')
-								h2.h4.mb-0 #{translate("notifications_delay_minutes_label")}
-							p #{translate("notifications_delay_description")}
-							p.text-muted #{translate("notifications_delay_server_default")} #{defaultDelayLabel}
+								.card.page-content-card.setting-container.mb-4#notification-prefs-delay
+									input(name='notificationDelayMinutes' id='notificationDelayMinutes' type='number' min='1' max='10080' step='1' value=(notificationDelayMinutes != null ? notificationDelayMinutes : ''))
+									div
+										label.checkbox-label(for='notificationDelayMinutes')
+											h2.h4.mb-0 #{translate("notifications_delay_minutes_label")}
+										p #{translate("notifications_delay_description")}
+										p.text-muted #{translate("notifications_delay_server_default")} #{defaultDelayLabel}
 
-					p #{translate("note_still_receives_important_emails")}
+								p #{translate("note_still_receives_important_emails")}
 
-					.d-flex.justify-content-end.mt-4
-						button.btn-primary.btn(type='submit' data-ol-disabled-inflight)
-							span #{translate("save")}
+								.d-flex.justify-content-end.mt-4
+									button.btn-primary.btn(type='submit' data-ol-disabled-inflight)
+										span #{translate("save")}
 
-				.page-separator
-				.d-flex.gap-3
-					a.btn.btn-secondary(href='/user/mysettings') #{translate("back_to_account_settings")}
-					a.btn.btn-secondary(href='/project') #{translate("back_to_your_projects")}
+							.page-separator
+							.d-flex.gap-3
+								a.btn.btn-secondary(href='/user/mysettings') #{translate("back_to_account_settings")}
+								a.btn.btn-secondary(href='/project') #{translate("back_to_your_projects")}
+				#notif-prefs-cookie-root
+
+	each file in entrypointScripts('modules/page-shells/pages/ds-settings-shell')
+		script(type='text/javascript' nonce=scriptNonce src=file)

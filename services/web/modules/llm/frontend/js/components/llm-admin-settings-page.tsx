@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import getMeta from '@/utils/meta'
 import { postJSON } from '@/infrastructure/fetch-json'
 import useAsync from '@/shared/hooks/use-async'
-import { DsPageAccountMenuWithProviders } from '@/shared/components/navbar/ds-page-account-menu'
 import OLButton from '@/shared/components/ol/ol-button'
 import OLFormGroup from '@/shared/components/ol/ol-form-group'
 import OLFormLabel from '@/shared/components/ol/ol-form-label'
@@ -342,10 +341,21 @@ export default function LLMAdminSettingsPage() {
 
     const allModels = Array.from(new Set([...knownModels, ...availableModels, ...allowedModels]))
 
-    // overleaf-lab (owner request 2026-08-26): admin page reorganized like the
-    // admin/user console — a left sidebar lists the sections, the right column
-    // shows the active one (CSS hides the rest via data-active/data-sec).
+    // 2026-09-04 (R5#4, owner round-5): section switching (the golden
+    // /admin/site TAB model — one section visible) now drives from the
+    // golden shell sidebar (user-list-filters buttons, data-sec) via the
+    // 'ds-settings-nav' CustomEvent; the in-page nav + account menu are gone
+    // (shell provides both). CSS keeps data-active/data-sec for show/hide.
     const [activeSection, setActiveSection] = useState('features')
+
+    useEffect(() => {
+        function onShellNav(e: Event) {
+            const sec = (e as CustomEvent<{ sec?: string }>)?.detail?.sec
+            if (sec) setActiveSection(sec)
+        }
+        window.addEventListener('ds-settings-nav', onShellNav)
+        return () => window.removeEventListener('ds-settings-nav', onShellNav)
+    }, [])
 
     return (
         <div className="container llm-settings ol-llm-admin-settings" data-active={activeSection}>
@@ -363,39 +373,9 @@ export default function LLMAdminSettingsPage() {
               </p>
           </div>
 
-          {/* overleaf-lab: sidebar navigation (admin/user-style layout) */}
-          <nav className="llm-admin-sidebar" aria-label={t('llm_admin_sections', 'LLM settings sections')}>
-              {[
-                  { id: 'features', icon: 'toggle_on', label: t('llm_features', 'Features') },
-                  { id: 'connection', icon: 'link', label: t('api_connection', 'API Connection') },
-                  { id: 'models', icon: 'model_training', label: t('model_selection', 'Model Selection') },
-                  { id: 'prompt', icon: 'description', label: t('system_prompt', 'System Prompt') },
-                  { id: 'prompts', icon: 'edit_note', label: t('ai_prompts', 'AI Prompts') },
-                  { id: 'availability', icon: 'shield', label: t('services_availability', 'Services (availability)') }, // overleaf-lab (grammar port)
-                  { id: 'usage', icon: 'insights', label: t('llm_usage', 'Usage') }, // overleaf-lab (usage meter)
-              ].map(s => (
-                  <button
-                      key={s.id}
-                      type="button"
-                      role="tab"
-                      className={`llm-admin-nav-item${activeSection === s.id ? ' active' : ''}`}
-                      aria-current={activeSection === s.id ? 'page' : undefined}
-                      onClick={() => setActiveSection(s.id)}
-                  >
-                      <span aria-hidden="true">
-                          <MaterialIcon type={s.icon} className="llm-admin-nav-icon" />
-                      </span>
-                      {s.label}
-                  </button>
-              ))}
-              {/* 2026-09-04 (P, owner round-4): down-left account menu
-                  (.ds-nav-sidebar-lower) — the same shared menu as the golden
-                  /admin/site. INSIDE the sidebar nav: round-3 placed it as a
-                  grid sibling, which made the 240px/1fr grid wrap and shoved
-                  the content form out of the content column (same bug as the
-                  user page, fixed the same way). */}
-              <DsPageAccountMenuWithProviders rootId="llm-admin-account-menu" />
-          </nav>
+          {/* R5#4: left sidebar + down-left shared account menu are rendered
+              by the golden shell (llm-admin-settings.pug + ds-settings-shell);
+              nav clicks dispatch 'ds-settings-nav' (listened above). */}
 
           <form onSubmit={handleSave} className="llm-admin-content">
               {/* ── Section 1: Features ── */}

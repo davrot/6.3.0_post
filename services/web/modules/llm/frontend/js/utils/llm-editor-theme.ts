@@ -13,7 +13,16 @@ function readThemeTokens(): { bg?: string; fg?: string } {
     const host = (document.body || document.documentElement) as HTMLElement
     const cs = getComputedStyle(host)
     const bg = (cs.getPropertyValue('--wf-row-hi') || '').trim()
-    const fg = (cs.getPropertyValue('--content-primary') || '').trim()
+    // 2026-09-04 (R5#6, owner round-5): --content-primary stays DARK in both
+    // themes (measured live: #1b222c on a dark body) — it is the un-themed
+    // ink color, NOT the themed body text. The LLM surface then rendered
+    // dark text on the dark panel (user: "gray/black font on a gray
+    // background"). --content-primary-themed inverts with the overall theme
+    // (dark body → #f4f5f6; light body → #1b222c), so it is the correct text
+    // token; fall back to --content-primary if the themed var is absent.
+    const fg =
+        (cs.getPropertyValue('--content-primary-themed') || '').trim() ||
+        (cs.getPropertyValue('--content-primary') || '').trim()
     const out: { bg?: string; fg?: string } = {}
     if (bg && bg !== 'transparent' && bg.indexOf('rgba(0, 0, 0, 0)') < 0) out.bg = bg
     if (fg && fg !== 'transparent' && fg.indexOf('rgba(0, 0, 0, 0)') < 0) out.fg = fg

@@ -6,6 +6,10 @@ block entrypointVar
 block vars
 	// 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title on app/admin/user pages.
 	- const hideBrandTitle = true
+	// 2026-09-04 (R5#1, owner): /project dashboard must NOT show the brand logo
+	// (layout-react exposes this as ol-navbar.hideLogo → HeaderLogoOrTitle
+	// returns null; the pug-level CSS kill can't reach the React navbar).
+	- const hideNavLogo = true
 	- const suppressNavContentLinks = true
 	- const suppressNavbar = true
 	- const suppressSkipToContent = false

@@ -118,4 +118,24 @@
   > .row + .row {
     margin-top: 0.5rem;
   }
+
+  // 2026-09-04 (R5#3, owner): the Alert settings form (server-rendered into
+  // #instance-stats-settings) had ZERO vertical rhythm in both themes —
+  // labels/inputs/textarea/buttons were cramped. Explicit y-padding now:
+  // label hugs its control; controls breathe before the next label; buttons
+  // get space above and a gap between them.
+  #instance-stats-settings {
+    > div.form-label-wrap,
+    > div:has(> .form-label) {
+      margin-bottom: 0.35rem;
+    }
+
+    > .form-control {
+      margin: 0.15rem 0 1rem;
+    }
+
+    > .btn {
+      margin: 0.75rem 0.5rem 0 0;
+    }
+  }
 }

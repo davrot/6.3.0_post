@@ -244,45 +244,37 @@
 /* overleaf-lab: admin LLM settings page — styles extracted from inline
    styles (F13). Rules are scoped under the page container for specificity
    over the OL/bootstrap component base classes they override. */
+/* overleaf-lab: admin LLM settings page — styles extracted from inline
+   styles (F13). Scoped under the page container for specificity over the
+   OL/bootstrap base classes.
+   2026-09-04 (R5#4, owner round-5): the 240px/1fr grid + the in-page
+   console sidebar are GONE — the golden shell (llm-admin-settings.pug +
+   ds-settings-shell) provides the left column (.user-list-filters) and the
+   shared down-left account menu. This page renders CONTENT ONLY; sections
+   keep the golden /admin/site TAB model (data-active shows one [data-sec]
+   card at a time; the shell nav dispatches 'ds-settings-nav'). */
 .ol-llm-admin-settings {
-  // overleaf-lab (owner request 2026-08-26): admin/user-style console layout —
-  // full-width grid: sticky left sidebar + content column. (Overrides the
-  // centered 800px column of the .llm-settings base used by the user pages.)
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
+  display: block;
   max-width: none;
 
   .llm-settings-header {
-    grid-column: 1 / -1;
-    margin-bottom: 0;
+    margin-bottom: 1rem;
   }
 
   .llm-admin-content {
     min-width: 0;
   }
 
-  // Hide every section except the active one (data-active is set on the
-  // container, data-sec on each section).
+  // Hide every section except the active one (data-active on the container,
+  // data-sec on each section) — the /admin/site tab model.
   [data-sec] {
     display: none;
   }
 
-  // 2026-09 fix: the Usage section lives OUTSIDE <form.llm-admin-content>
-  // (LLMUsageMeter is not form-safe) — pin it to the content column, and
-  // make sure every sidebar section (incl. "Services (availability)", which
-  // was missing its display rule and rendered an EMPTY tab) has a row.
-  // 2026-09 fix (N, owner): the Usage tab is READ-ONLY (usage meter) — it has
-  // nothing to save, so hide the form's Save button (and its error row stays
-  // irrelevant) whenever the Usage section is active.
+  // 2026-09 fix (N, owner): the Usage tab is READ-ONLY (usage meter) —
+  // nothing to save, so hide the form's Save button on that tab.
   &[data-active='usage'] .ol-llm-admin-settings__save-btn {
     display: none !important;
-  }
-
-  .llm-admin-content,
-  [data-sec='usage'] {
-    grid-column: 2;
   }
 
   &[data-active='features'] [data-sec='features'],
@@ -296,325 +288,12 @@
     display: block;
   }
 
-  // overleaf-lab: sidebar navigation — console-style list, active highlight.
-  .llm-admin-sidebar {
-    position: sticky;
-    top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 0.5rem;
-    border: 1px solid var(--wf-border-in, #dfe5ec);
-    border-radius: 10px;
-    background-color: var(--wf-row-hi, #fff);
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-
-    .llm-admin-nav-item {
-      display: flex;
-      align-items: center;
-      gap: 0.625rem;
-      width: 100%;
-      padding: 0.5rem 0.625rem;
-      border: 0;
-      border-radius: 7px;
-      background: transparent;
-      color: var(--content-primary, #1b222c);
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-align: left;
-      cursor: pointer;
-
-      .llm-admin-nav-icon {
-        font-size: 18px;
-        color: var(--content-secondary, #475569);
-        flex-shrink: 0;
-      }
-
-      &:hover {
-        background-color: rgba(40, 81, 143, 0.06);
-      }
-
-      &.active {
-        background-color: rgba(40, 81, 143, 0.1);
-        color: var(--wf-accent, #28518f);
-        font-weight: 600;
-
-        .llm-admin-nav-icon {
-          color: var(--wf-accent, #28518f);
-        }
-      }
-    }
-
-    // 2026-09-04 (P, owner round-4): the shared account menu (.ds-nav-sidebar-lower)
-    // lives INSIDE this nav now — divider + breathing room at the bottom.
-    .ds-nav-sidebar-lower {
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--wf-border-in, #dfe5ec);
-
-      nav {
-        margin-bottom: 0;
-      }
-    }
-  }
-
   .llm-settings-section {
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
   }
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-
-    .llm-admin-sidebar {
-      position: static;
-      flex-direction: row;
-      flex-wrap: wrap;
-      max-height: none;
-
-      .llm-admin-nav-item {
-        width: auto;
-      }
-    }
-  }
-
-  /* ── toggle switch (Features section) ── */
-  .ol-llm-admin-settings__switch {
-    position: relative;
-    width: 42px;
-    height: 24px;
-    flex-shrink: 0;
-    border-radius: 999px;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: background-color 0.15s;
-    background-color: var(--border-color-02, #adb5bd);
-
-    &.is-on {
-      background-color: var(--wf-accent, #28518f);
-
-      .ol-llm-admin-settings__switch-knob {
-        left: 21px;
-      }
-    }
-  }
-
-  .ol-llm-admin-settings__switch-knob {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: var(--wf-row-hi, #fff);
-    transition: left 0.15s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-
-  /* ── shared text helpers ── */
-  .ol-llm-admin-settings__icon-sm {
-    font-size: 0.875rem;
-  }
-
-  .ol-llm-admin-settings__icon-base {
-    font-size: 1rem;
-  }
-
-  .ol-llm-admin-settings__icon-lg {
-    font-size: 1.125rem;
-  }
-
-  .ol-llm-admin-settings__icon-green {
-    color: var(--green-60, #198754);
-  }
-
-  .ol-llm-admin-settings__mono {
-    font-family: monospace;
-    font-size: 0.8125rem;
-  }
-
-  .ol-llm-admin-settings__muted {
-    color: var(--content-secondary, #475569);
-  }
-
-  .ol-llm-admin-settings__small {
-    font-size: 0.8125rem;
-    color: var(--content-secondary, #475569);
-  }
-
-  .ol-llm-admin-settings__model-count {
-    margin-left: auto;
-    font-size: 0.8125rem;
-    color: var(--content-secondary, #475569);
-  }
-
-  .ol-llm-admin-settings__connected-badge {
-    margin-left: auto;
-    font-size: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__link-btn {
-    padding: 0;
-    font-size: 0.8125rem;
-  }
-
-  .ol-llm-admin-settings__link-btn-lg {
-    padding: 0;
-    font-size: 0.875rem;
-  }
-
-  .ol-llm-admin-settings__no-margin {
-    margin: 0;
-  }
-
-  .ol-llm-admin-settings__help-before {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__no-rubrics {
-    color: var(--content-secondary, #475569);
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-  }
-
-  /* ── layout rows ── */
-  .ol-llm-admin-settings__row-between {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .ol-llm-admin-settings__row-inline {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__row-end {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .ol-llm-admin-settings__feature-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-  }
-
-  .ol-llm-admin-settings__feature-row + .ol-llm-admin-settings__feature-row {
-    border-top: 1px solid var(--wf-border-in, #dfe5ec);
-  }
-
-  .ol-llm-admin-settings__feature-title {
-    font-weight: 500;
-  }
-
-  .ol-llm-admin-settings__model-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.625rem 1rem;
-    cursor: pointer;
-    margin: 0;
-    transition: background-color 0.15s;
-  }
-
-  .ol-llm-admin-settings__model-row + .ol-llm-admin-settings__model-row {
-    border-top: 1px solid var(--wf-border-in, #dfe5ec);
-  }
-
-  .ol-llm-admin-settings__model-checkbox {
-    width: 1rem;
-    height: 1rem;
-    accent-color: var(--wf-accent, #28518f);
-  }
-
-  .ol-llm-admin-settings__models-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__rubric-card {
-    border: 1px solid var(--wf-border-in, #dfe5ec);
-    border-radius: 6px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__save-btn {
-    min-width: 160px;
-  }
-
-  /* ── text + state colors ── */
-  .ol-llm-admin-settings__ok-green {
-    color: var(--green-60, #198754);
-    font-size: 0.875rem;
-  }
-
-  .ol-llm-admin-settings__muted-md {
-    color: var(--content-secondary, #475569);
-    font-size: 0.875rem;
-    margin-bottom: 1rem;
-  }
-
-  .ol-llm-admin-settings__mono-lg {
-    font-family: monospace;
-    font-size: 0.875rem;
-  }
-
-  .ol-llm-admin-settings__small-md {
-    font-size: 0.875rem;
-    padding: 0;
-  }
-
-  .ol-llm-admin-settings__model-list {
-    border: 1px solid var(--wf-border-in, #dfe5ec);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-
-  /* ── margin utilities (this page only) ── */
-  .ol-llm-admin-settings__mb-xs {
-    margin-bottom: 0.25rem;
-  }
-
-  .ol-llm-admin-settings__mb-sm {
-    margin-bottom: 0.5rem;
-  }
-
-  .ol-llm-admin-settings__mb-lg {
-    margin-bottom: 1rem;
-  }
-
-  .ol-llm-admin-settings__mb-xl {
-    margin-bottom: 1.25rem;
-  }
-
-  .ol-llm-admin-settings__mt-sm {
-    margin-top: 0.5rem;
-  }
-
-  .ol-llm-admin-settings__mt-md {
-    margin-top: 0.75rem;
-  }
-
-  .ol-llm-admin-settings__mt-lg {
-    margin-top: 1rem;
-  }
-
-  .ol-llm-admin-settings__mt-xl {
-    margin-top: 1.25rem;
-  }
-
-  .ol-llm-admin-settings__mt-lg-mb-0 {
-    margin-top: 1rem;
-    margin-bottom: 0;
-  }
+  // R5#4: the shell nav highlights the current tab in the golden column;
+  // no in-page sidebar styles are needed anymore.
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -806,70 +485,20 @@
 }
 
 // ---------------------------------------------------------------------------
-// 2026-09 (P, owner): /user/llm-settings LEFT COLUMN (section links) —
-// mirror the admin sidebar styling (theme-aware tokens).
-// ---------------------------------------------------------------------------
-.llm-user-settings {
-  .llm-user-settings__layout {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
+// 2026-09-04 (R5#2, owner round-5): the custom 220px grid + the in-page
+// sidebar are GONE — the golden shell (llm-settings.pug + ds-settings-shell)
+// provides the left column (.user-list-filters) and the shared down-left
+// account menu, exactly like /user/mysettings. The page now renders CONTENT
+// ONLY inside the golden content column; keep the section-card surface
+// theme-aware (design tokens) in both overall themes (light/dark).
+.llm-user-settings__content {
+  min-width: 0;
+
+  .page-header {
+    margin-bottom: 1.25rem;
   }
 
-  .llm-user-settings__sidebar {
-    position: sticky;
-    top: 1rem;
-    padding: 0.5rem;
-    border: 1px solid var(--wf-border-in, #dfe5ec);
-    border-radius: 10px;
-    background-color: var(--wf-row-hi, #fff);
-    color: var(--content-primary, #1b222c);
-
-    .llm-user-settings__nav {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-
-      a {
-        display: block;
-        padding: 0.5rem 0.625rem;
-        border-radius: 7px;
-        color: var(--content-primary, #1b222c);
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-decoration: none;
-
-        &:hover {
-          background-color: rgba(40, 81, 143, 0.06);
-        }
-      }
-    }
-
-    // 2026-09-04 (P, owner round-4): the shared account menu (.ds-nav-sidebar-lower)
-    // lives INSIDE this nav — divider + breathing room at the bottom.
-    .ds-nav-sidebar-lower {
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--wf-border-in, #dfe5ec);
-
-      nav {
-        margin-bottom: 0;
-      }
-    }
-  }
-
-  .llm-user-settings__content {
-    min-width: 0;
-  }
-
-  @media (max-width: 768px) {
-    .llm-user-settings__layout {
-      grid-template-columns: 1fr;
-    }
-
-    .llm-user-settings__sidebar {
-      position: static;
-    }
+  h2 {
+    margin-top: 1.75rem;
   }
 }

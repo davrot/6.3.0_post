@@ -340,7 +340,13 @@
     h3 {
         font-size: var(--font-size-02);
         font-weight: 600;
-        color: var(--content-primary);
+        // 2026-09-04 (R5#6, owner round-5): --content-primary is the UN-themed
+        // ink color (pinned #1b222c in both themes) — on the dark chat panel
+        // the welcome title was nearly invisible ("gray/black on gray").
+        // --content-primary-themed inverts with the overall theme (dark →
+        // #f4f5f6); the --wf-panel-text scope (editor/overall theme bridge)
+        // wins when present, exactly like the sibling >p rule.
+        color: var(--wf-panel-text, var(--content-primary-themed, var(--content-primary)));
         margin-bottom: 10px;
     }
 
