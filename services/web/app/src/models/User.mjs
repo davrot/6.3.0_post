@@ -9,6 +9,9 @@ const MAX_EMAIL_LENGTH = 254
 const MAX_NAME_LENGTH = 255
 const refProviderSettingsSchema = {
   enabled: { type: Boolean, default: true },
+  // overleaf-lab (ext zotero port): encrypted stored credential
+  // (Zotero TokenManager stores { apiKeyEncrypted } under refProviders.zotero).
+  apiKeyEncrypted: { type: String },
   groups: {
     type: [
       {
@@ -266,6 +269,27 @@ export const UserSchema = new Schema(
     llmModels: { type: [String], default: [] },
     llmModelNames: { type: [String], default: [] },
     llmCompletionModels: { type: [String], default: [] },
+    // overleaf-lab (ext llm port): bring-your-own provider rows. MUST be in the schema:
+    // the strict model stripped unmodeled paths on read AND from $set updates, which
+    // made LLMSettingsController see 0 providers and every add hit the cap-guard
+    // (modifiedCount 0 → spurious "Maximum of 10 providers").
+    llmProviders: [
+      {
+        _id: false,
+        id: { type: String, default: '' },
+        name: { type: String, default: '' },
+        providerType: { type: String, default: 'openaiCompatible' },
+        baseUrl: { type: String, default: '' },
+        apiKey: { type: String, default: '' },
+        models: { type: [String], default: [] },
+        completionModel: { type: String, default: '' },
+        enabled: { type: Boolean, default: true },
+        createdAt: { type: Date },
+        updatedAt: { type: Date },
+      },
+    ],
+    // per-user compliance rubrics (LLMSettingsController.saveComplianceRubrics)
+    llmComplianceRubrics: { type: [Schema.Types.Mixed], default: undefined },
     // overleaf-lab: user-scoped shared LLM model selection (File → "Select
     // LLM Model"): model id or `u:<rowId>:<model>`; '' = deployment default.
     // Written by LLMSettingsController.saveSelectedModel (module:llm).

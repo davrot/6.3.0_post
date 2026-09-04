@@ -2,7 +2,7 @@
   "name": "@overleaf/datamanipulator",
   "version": "1.0.0",
   "description": "Microservice for file tree operations with binary detection and sync-ready metadata",
-  "main": "app/src/index.mjs",
+  "main": "app/src/server.mjs",
   "type": "module",
   "scripts": {
     "test": "vitest run",

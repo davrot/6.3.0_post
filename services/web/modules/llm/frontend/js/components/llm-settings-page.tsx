@@ -52,10 +52,12 @@ export default function LLMSettingsPage() {
                                         <a href="#llm-user-usage">{t('llm_usage', 'Usage')}</a>
                                     </li>
                                 </ul>
+                                {/* 2026-09 (P, owner round-4): down-left account menu
+                                    (.ds-nav-sidebar-lower) — INSIDE the sidebar column
+                                    (round-3 placed it as a grid sibling, which pushed the
+                                    content card into the 220px left column). */}
+                                <DsPageAccountMenuWithProviders rootId="llm-user-account-menu" />
                             </nav>
-                            {/* 2026-09 (P, owner): down-left account menu (.ds-nav-sidebar-lower)
-                                — the same shared menu as the golden /admin/site (was missing). */}
-                            <DsPageAccountMenuWithProviders rootId="llm-user-account-menu" />
                             <OLPageContentCard className="llm-user-settings__content">
                                 <div className="page-header">
                                     <h1>{t('llm_settings', 'LLM Settings')}</h1>

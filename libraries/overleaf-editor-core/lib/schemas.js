@@ -139,6 +139,15 @@ const rawLinkedFileData = z.discriminatedUnion('provider', [
     // default this to 'bibtex' (ZoteroAgent `_getFormat`)
     format: z.enum(['bibtex', 'biblatex']).optional(),
     group_id: zz.routeSegment().nullish(),
+    // CE ext (modules/zotero) linked files use different key names —
+    // ZoteroLinkedFileAgent._sanitizeData writes zoteroGroupId / bibFormat /
+    // importedByUserId / importedByName. Accept both shapes (2026-09-04:
+    // zotero import 500: document-updater rejected "Unrecognized keys:
+    // zoteroGroupId, bibFormat, importedByUserId, importedByName").
+    zoteroGroupId: zz.routeSegment().nullish(),
+    bibFormat: z.enum(['bibtex', 'biblatex']).optional(),
+    importedByUserId: zz.objectId().nullish(),
+    importedByName: z.string().nullish(),
     importer_id: z.string().optional(),
     v1_importer_id: z.number().optional(),
     importedAt: z.iso.datetime().optional(),

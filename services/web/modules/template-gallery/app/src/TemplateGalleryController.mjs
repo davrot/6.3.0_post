@@ -144,7 +144,7 @@ async function templatesCategoryPage(req, res, next) {
       userId
     )
     res.render(Path.resolve(__dirname, '../views/template_gallery/template-gallery'), {
-      title,
+      hideNavLogo: true, // 2026-09 (S1, owner): no navbar brand logo on app pages (child locals don't reach the parent template; pass via render locals)      title,
       category,
       userIsTemplatesManager,
       ...await themeLocals(req, res),
@@ -160,7 +160,7 @@ async function templateDetailsPage(req, res, next) {
   try {
     const template = await TemplateGalleryManager.getTemplate('_id', req.params.template_id)
     res.render(Path.resolve(__dirname, '../views/template_gallery/template'), {
-      title: `${t('template')}: ${template.name}`,
+      hideNavLogo: true, // 2026-09 (S1, owner): no navbar brand logo on app pages (child locals don't reach the parent template; pass via render locals)      title: `${t('template')}: ${template.name}`,
       template: JSON.stringify(template),
       languages: Settings.languages,
       userIsTemplatesManager: await TemplateAuthorizationHelper.hasTemplateAdminAccess(SessionManager.getSessionUser(req.session), userId),
@@ -340,7 +340,7 @@ async function templateAdminPage(req, res, next) {
       userId
     )
     res.render(Path.resolve(__dirname, '../views/template_gallery/template-admin'), {
-      title: t('Manage template gallery'),
+      hideNavLogo: true, // 2026-09 (S1, owner): no navbar brand logo on app pages (child locals don't reach the parent template; pass via render locals)      title: t('Manage template gallery'),
       userIsTemplatesManager,
       ...await themeLocals(req, res),
     })

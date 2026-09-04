@@ -103,3 +103,19 @@
 .ce-admin-desc {
   max-width: 320px;
 }
+
+// 2026-09-04 (P, owner round-4 F5): /admin/instance-stats gold cards hugged the
+// chart edges (the sections are plain `section.card.page-content-card` with no
+// .card-body, so they had no content gutter at all). Give them a proper
+// padding + breathing room under the H2.
+.instance-stats-section {
+  padding: 1.5rem;
+
+  h2 {
+    margin-bottom: 1rem;
+  }
+
+  > .row + .row {
+    margin-top: 0.5rem;
+  }
+}

@@ -14,7 +14,8 @@
   "dependencies": {
     "@overleaf/logger": "*",
     "express": "*",
-    "webdav": "*"
+    "webdav": "*",
+    "@nodable/entities": "*"
   },
   "devDependencies": {
     "vitest": "^2.0.0",

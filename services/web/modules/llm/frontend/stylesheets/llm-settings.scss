@@ -345,6 +345,18 @@
         }
       }
     }
+
+    // 2026-09-04 (P, owner round-4): the shared account menu (.ds-nav-sidebar-lower)
+    // lives INSIDE this nav now — divider + breathing room at the bottom.
+    .ds-nav-sidebar-lower {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--wf-border-in, #dfe5ec);
+
+      nav {
+        margin-bottom: 0;
+      }
+    }
   }
 
   .llm-settings-section {
@@ -831,6 +843,18 @@
         &:hover {
           background-color: rgba(40, 81, 143, 0.06);
         }
+      }
+    }
+
+    // 2026-09-04 (P, owner round-4): the shared account menu (.ds-nav-sidebar-lower)
+    // lives INSIDE this nav — divider + breathing room at the bottom.
+    .ds-nav-sidebar-lower {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--wf-border-in, #dfe5ec);
+
+      nav {
+        margin-bottom: 0;
       }
     }
   }

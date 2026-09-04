@@ -6,6 +6,8 @@ block entrypointVar
 block vars
 	// 2026-09 (Q, owner): no 'Overleaf Community Edition' brand title on app/admin/user pages.
 	- const hideBrandTitle = true
+	- const hideNavLogo = true  // 2026-09-04 (F7, owner round-4): no navbar brand logo on /library
+	- const bodyDataPage = 'library'  // 2026-09-04 (F7): page-scoped CSS kill for the navbar brand
 	- const suppressFooter = true
 
 block append meta

@@ -227,7 +227,7 @@ async function addProvider(req, res) {
         },
         { $set: { llmProviders: merged } }
     )
-    if (!capGuard.modifiedCount) {
+    if (!capGuard || capGuard.matchedCount === 0) {
         return res.status(400).json({ ok: false, error: 'limit', message: `Maximum of ${MAX_PROVIDERS_PER_USER} providers` })
     }
     logger.info({ userId, rowId: row.id, name: row.name }, '[LLM] addProvider: row added')

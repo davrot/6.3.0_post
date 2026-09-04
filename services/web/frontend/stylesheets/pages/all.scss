@@ -231,3 +231,19 @@ body[data-page='instance-stats'] .thin-footer {
     width: 100%;
   }
 }
+
+// 2026-09 (S1, owner) body-page-logo-kill: app pages on the marketing layout
+// keep no navbar brand logo / title (pug locals from child views don't
+// reliably reach the parent template's navbar include — the body-page class
+// + CSS is the proven mechanism, same as the pill/footer suppression).
+body[data-page='project-list'] .navbar-logo,
+body[data-page='project-list'] .navbar-title,
+body[data-page='templates'] .navbar-logo,
+body[data-page='templates'] .navbar-title,
+body[data-page='templates-manage'] .navbar-logo,
+body[data-page='templates-manage'] .navbar-title,
+// 2026-09-04 (F7, owner round-4): /library (bib-editor module) — no brand logo.
+body[data-page='library'] .navbar-logo,
+body[data-page='library'] .navbar-title {
+  display: none !important;
+}

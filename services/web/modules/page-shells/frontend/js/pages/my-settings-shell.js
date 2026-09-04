@@ -79,6 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const vis = entries
         .filter(e => e.isIntersecting)
         .sort((a, b) => ((a.target.compareDocumentPosition(b.target) & 2) ? 1 : -1))
+      // 2026-09-04 (P, owner round-4): an observer firing with ONLY non-
+      // intersecting entries (initial fire, or all sections scrolled past the
+      // -55% rootMargin band) used to throw on `vis[0].target` — a JS error on
+      // /user/mysettings. Guard the empty list before touching vis[0].
+      if (vis.length === 0) return
       const btn = map.get(vis[0].target)
       if (btn) setActive(btn)
     }, { rootMargin: '0px 0px -55% 0px', threshold: 0 })

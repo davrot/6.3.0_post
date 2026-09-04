@@ -225,11 +225,11 @@ async function citationKeySuggestions(req, res) {
 }
 
 async function libraryPage(req, res) {
-  res.render(LIBRARY_VIEW, { libraryView: 'library', ...await themeLocals(req, res) })
+  res.render(LIBRARY_VIEW, { libraryView: 'library', hideNavLogo: true, ...await themeLocals(req, res) })
 }
 
 async function libraryTrashPage(req, res) {
-  res.render(LIBRARY_VIEW, { libraryView: 'trash', ...await themeLocals(req, res) })
+  res.render(LIBRARY_VIEW, { libraryView: 'trash', hideNavLogo: true, ...await themeLocals(req, res) })
 }
 
 /**

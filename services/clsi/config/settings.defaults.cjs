@@ -132,7 +132,7 @@ if (process.env.ALLOWED_COMPILE_GROUPS) {
 
 if ((process.env.DOCKER_RUNNER || process.env.SANDBOXED_COMPILES) === 'true') {
   if (
-    !fs.existsSync(Path.join(__dirname, '..', 'app', 'js', 'DockerRunner.js'))
+    !fs.existsSync(Path.join(__dirname, '..', 'app', 'js', 'DockerRunner.mjs')) // 2026-09 (K, owner): 6.3.0 ships the runner as ESM (DockerRunner.mjs)
   ) {
     console.error(
       'Sandboxed compiles are only available with Overleaf Server Pro. Compare Server Pro with Community Edition here: https://docs.overleaf.com/on-premises/welcome/server-pro-vs.-community-edition'
@@ -147,13 +147,13 @@ if ((process.env.DOCKER_RUNNER || process.env.SANDBOXED_COMPILES) === 'true') {
       image:
         process.env.TEXLIVE_IMAGE ||
         process.env.TEX_LIVE_DOCKER_IMAGE ||
-        'quay.io/sharelatex/texlive-full:2017.1',
+        (process.env.ALL_TEX_LIVE_DOCKER_IMAGES || 'quay.io/sharelatex/texlive-full:latest').split(',')[0].trim(),
       env: {
         HOME: '/tmp',
         CLSI: 1,
       },
       socketPath: '/var/run/docker.sock',
-      user: process.env.TEXLIVE_IMAGE_USER || 'tex',
+      user: process.env.TEXLIVE_IMAGE_USER || 'www-data', // 2026-09 (owner): official texlive/texlive images ship user www-data (uid 33), not 'tex'; must also match the host cache-dir owner (clsi runs as www-data) — matches the fixed reference tree
     },
     optimiseInDocker: true,
     expireProjectAfterIdleMs: 24 * 60 * 60 * 1000,

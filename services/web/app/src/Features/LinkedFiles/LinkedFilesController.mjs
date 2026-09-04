@@ -114,6 +114,13 @@ const createLinkedFileSchema = z.object({
       data: z.strictObject({
         format: z.enum(['bibtex', 'biblatex']).optional(),
         group_id: zz.routeSegment().optional(),
+        // CE ext contract (modules/zotero ZoteroLinkedFileAgent + the file-tree
+        // import form): the agent reads `zoteroGroupId` / `bibFormat`, not the
+        // upstream `group_id` / `format` names. Accepting both keeps the shared
+        // agent shape (2026-09-04, zotero import 400:
+        // "Unrecognized keys: zoteroGroupId, bibFormat").
+        zoteroGroupId: z.string().optional(),
+        bibFormat: z.enum(['bibtex', 'biblatex']).optional(),
       }),
     }),
     z.strictObject({
@@ -176,6 +183,8 @@ const LINKED_FILE_DATA_ALLOW_LIST = [
   'format',
   'group_id',
   'clsiServerId',
+  'zoteroGroupId',
+  'bibFormat',
 ]
 
 function redactLinkedFileData(data) {

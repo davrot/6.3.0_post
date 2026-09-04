@@ -388,11 +388,14 @@ export default function LLMAdminSettingsPage() {
                       {s.label}
                   </button>
               ))}
+              {/* 2026-09-04 (P, owner round-4): down-left account menu
+                  (.ds-nav-sidebar-lower) — the same shared menu as the golden
+                  /admin/site. INSIDE the sidebar nav: round-3 placed it as a
+                  grid sibling, which made the 240px/1fr grid wrap and shoved
+                  the content form out of the content column (same bug as the
+                  user page, fixed the same way). */}
+              <DsPageAccountMenuWithProviders rootId="llm-admin-account-menu" />
           </nav>
-
-          {/* 2026-09 (P, owner): down-left account menu (.ds-nav-sidebar-lower) —
-              the same shared menu as the golden /admin/site (was missing). */}
-          <DsPageAccountMenuWithProviders rootId="llm-admin-account-menu" />
 
           <form onSubmit={handleSave} className="llm-admin-content">
               {/* ── Section 1: Features ── */}
