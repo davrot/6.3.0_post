@@ -1,21 +1,19 @@
 import AddCollaborators from './add-collaborators'
-import AddCollaboratorsUpgrade from './add-collaborators-upgrade'
-import CollaboratorsLimitUpgrade from './collaborators-limit-upgrade'
-import AccessLevelsChanged from './access-levels-changed'
 import OLRow from '@/shared/components/ol/ol-row'
 import classnames from 'classnames'
 import { useFeatureFlag } from '@/shared/context/split-test-context'
 
+// OlliTeX fork (free-only): SaaS collaborator-limit upsell components
+// (AddCollaboratorsUpgrade, CollaboratorsLimitUpgrade, AccessLevelsChanged)
+// were removed — this fork has unlimited collaborators. The SaaS props from
+// the caller are intentionally accepted and ignored for API compatibility.
 export default function SendInvites({
   canAddCollaborators,
-  hasExceededCollaboratorLimit,
-  haveAnyEditorsBeenDowngraded,
-  somePendingEditorsResolved,
 }: {
   canAddCollaborators: boolean
-  hasExceededCollaboratorLimit: boolean
-  haveAnyEditorsBeenDowngraded: boolean
-  somePendingEditorsResolved: boolean
+  hasExceededCollaboratorLimit?: boolean
+  haveAnyEditorsBeenDowngraded?: boolean
+  somePendingEditorsResolved?: boolean
 }) {
   const isSharingUpdatesEnabled = useFeatureFlag('sharing-updates')
 
@@ -25,19 +23,6 @@ export default function SendInvites({
         'pb-3': isSharingUpdatesEnabled,
       })}
     >
-      {hasExceededCollaboratorLimit && !haveAnyEditorsBeenDowngraded && (
-        <AddCollaboratorsUpgrade />
-      )}
-
-      {haveAnyEditorsBeenDowngraded && (
-        <AccessLevelsChanged
-          somePendingEditorsResolved={somePendingEditorsResolved}
-        />
-      )}
-
-      {!canAddCollaborators &&
-        !hasExceededCollaboratorLimit &&
-        !haveAnyEditorsBeenDowngraded && <CollaboratorsLimitUpgrade />}
       <AddCollaborators readOnly={!canAddCollaborators} />
     </OLRow>
   )

@@ -460,13 +460,6 @@ describe('ProjectListController', function () {
       await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
     })
 
-    it("should send the user's best subscription when saas feature present", async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.res.render = (pageName, opts) => {
-        expect(opts.usersBestSubscription).to.deep.include({ type: 'free' })
-      }
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-    })
 
     it('should not return a best subscription without saas feature', async function (ctx) {
       ctx.Features.hasFeature.withArgs('saas').returns(false)
@@ -490,91 +483,8 @@ describe('ProjectListController', function () {
       expect(ctx.GeoIpLookup.promises.getCurrencyCode).to.not.have.been.called
     })
 
-    it('should send groupRole to customer.io for group admins', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails.resolves(
-        {
-          bestSubscription: { type: 'free' },
-          individualSubscription: null,
-          memberGroupSubscriptions: [],
-          managedGroupSubscriptions: [
-            {
-              planCode: 'group_professional',
-              membersLimit: 12,
-              admin_id: { _id: ctx.user._id },
-            },
-          ],
-        }
-      )
-      ctx.res.render = () => {}
 
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
 
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({
-          group_role: 'admin',
-        })
-      )
-    })
-
-    it('should send groupRole to customer.io for group managers', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails.resolves(
-        {
-          bestSubscription: { type: 'free' },
-          individualSubscription: null,
-          memberGroupSubscriptions: [],
-          managedGroupSubscriptions: [
-            {
-              planCode: 'group_professional',
-              membersLimit: 12,
-              admin_id: { _id: new ObjectId() },
-            },
-          ],
-        }
-      )
-      ctx.res.render = () => {}
-
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({
-          group_role: 'manager',
-        })
-      )
-    })
-
-    it('should send groupRole to customer.io for group members', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails.resolves(
-        {
-          bestSubscription: { type: 'free' },
-          individualSubscription: null,
-          memberGroupSubscriptions: [
-            {
-              planCode: 'group_professional',
-              userIsGroupManager: false,
-            },
-          ],
-          managedGroupSubscriptions: [],
-        }
-      )
-      ctx.res.render = () => {}
-
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({
-          group_role: 'member',
-        })
-      )
-    })
 
     it('should send packed split test assignments to customer.io', async function (ctx) {
       ctx.Features.hasFeature.withArgs('saas').returns(true)
@@ -623,127 +533,10 @@ describe('ProjectListController', function () {
       expect(call.args[2]).to.have.property('overleaf_id', ctx.user._id)
     })
 
-    it('should send enterprise_commons=true when user has commons from an enterprise_commons institution', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.UserGetter.promises.getUserFullEmails.resolves([
-        {
-          email: 'test@overleaf.com',
-          emailHasInstitutionLicence: true,
-          affiliation: {
-            institution: {
-              id: 1,
-              name: 'Overleaf',
-              commonsAccount: true,
-              enterpriseCommons: true,
-            },
-          },
-        },
-      ])
-      ctx.res.render = () => {}
 
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
 
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({ enterprise_commons: true })
-      )
-    })
 
-    it('should send enterprise_commons=false when affiliated with an enterprise_commons institution but without active commons access', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.UserGetter.promises.getUserFullEmails.resolves([
-        {
-          email: 'test@overleaf.com',
-          emailHasInstitutionLicence: false,
-          affiliation: {
-            institution: {
-              id: 1,
-              name: 'Overleaf',
-              commonsAccount: true,
-              enterpriseCommons: true,
-            },
-          },
-        },
-      ])
-      ctx.res.render = () => {}
 
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({ enterprise_commons: false })
-      )
-    })
-
-    it('should send domain_capture=true when user has an affiliation with domain capture enabled', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.UserGetter.promises.getUserFullEmails.resolves([
-        {
-          email: 'test@overleaf.com',
-          affiliation: {
-            institution: { id: 1, name: 'Overleaf' },
-            group: {
-              _id: 'g1',
-              domainCaptureEnabled: true,
-              managedUsersEnabled: false,
-            },
-          },
-        },
-      ])
-      ctx.res.render = () => {}
-
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({ domain_capture: true })
-      )
-    })
-
-    it('should send domain_capture=false when no affiliation has domain capture enabled', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.UserGetter.promises.getUserFullEmails.resolves([
-        {
-          email: 'test@overleaf.com',
-          affiliation: {
-            institution: { id: 1, name: 'Overleaf' },
-          },
-        },
-      ])
-      ctx.res.render = () => {}
-
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-
-      expect(ctx.Modules.promises.hooks.fire).to.have.been.calledWith(
-        'setUserProperties',
-        ctx.user._id,
-        sinon.match({ domain_capture: false })
-      )
-    })
-
-    it('should show INR Banner for Indian users with free account', async function (ctx) {
-      // usersBestSubscription is only available when saas feature is present
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails.resolves(
-        {
-          memberGroupSubscriptions: [],
-          managedGroupSubscriptions: [],
-          bestSubscription: {
-            type: 'free',
-          },
-        }
-      )
-      ctx.GeoIpLookup.promises.getCurrencyCode.resolves({
-        countryCode: 'IN',
-      })
-      ctx.res.render = (pageName, opts) => {
-        expect(opts.showInrGeoBanner).to.be.true
-      }
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-    })
 
     it('should not show INR Banner for Indian users with premium account', async function (ctx) {
       // usersBestSubscription is only available when saas feature is present
@@ -766,25 +559,6 @@ describe('ProjectListController', function () {
       await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
     })
 
-    it('should redirect to domain capture page', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SplitTestHandler.promises.getAssignment
-        .withArgs(ctx.req, ctx.res, 'domain-capture-redirect')
-        .resolves({ variant: 'enabled' })
-      ctx.Modules.promises.hooks.fire
-        .withArgs('findDomainCaptureGroupsUserCouldBePartOf', ctx.user._id)
-        .resolves([
-          [
-            {
-              subscription: { managedUsersEnabled: true },
-            },
-          ],
-        ])
-      ctx.res.redirect = url => {
-        url.should.equal('/domain-capture')
-      }
-      await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-    })
 
     it('should not redirect to domain capture page when no domain capture groups found', async function (ctx) {
       ctx.Features.hasFeature.withArgs('saas').returns(true)
@@ -1225,16 +999,6 @@ describe('ProjectListController', function () {
           await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
         })
 
-        it('does not show banner if user is part of any group subscription', async function (ctx) {
-          ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails.resolves(
-            { memberGroupSubscriptions: [{}] }
-          )
-
-          ctx.res.render = (pageName, opts) => {
-            expect(opts.showGroupsAndEnterpriseBanner).to.be.false
-          }
-          await ctx.ProjectListController.projectListPage(ctx.req, ctx.res)
-        })
 
         it('have a banner variant of "FOMO" or "on-premise"', async function (ctx) {
           ctx.res.render = (pageName, opts) => {

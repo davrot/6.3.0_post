@@ -127,14 +127,15 @@ function ActionButton({
   const unlinkTextId = `${titleId}-unlink`
 
   if (!hasFeature) {
+    // OlliTeX fork (free-only): no paid upgrade path for this integration —
+    // show a disabled state instead of linking to the removed SaaS plans page.
     return (
       <OLButton
         variant="primary"
-        href="/user/subscription/plans"
-        onClick={() => trackUpgradeClick(integration)}
+        disabled
         aria-labelledby={`${titleId} ${upgradeTextId}`}
       >
-        <span id={upgradeTextId}>{t('upgrade')}</span>
+        <span id={upgradeTextId}>{t('disabled')}</span>
       </OLButton>
     )
   } else if (linked) {

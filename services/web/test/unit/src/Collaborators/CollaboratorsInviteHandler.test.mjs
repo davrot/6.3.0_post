@@ -620,31 +620,6 @@ describe('CollaboratorsInviteHandler', function () {
       })
     })
 
-    describe('when the project has no more edit collaborator slots', function () {
-      beforeEach(function (ctx) {
-        ctx.LimitationsManager.promises.canAcceptEditCollaboratorInvite.resolves(
-          false
-        )
-      })
-
-      it('should add readAndWrite invitees to the project as readOnly (pendingEditor) users', async function (ctx) {
-        await ctx.call()
-        ctx.ProjectAuditLogHandler.promises.addEntry.should.have.been.calledWith(
-          ctx.projectId,
-          'editor-moved-to-pending',
-          null,
-          null,
-          { userId: ctx.userId.toString(), role: 'editor' }
-        )
-        ctx.CollaboratorsHandler.promises.addUserIdToProject.should.have.been.calledWith(
-          ctx.projectId,
-          ctx.sendingUserId,
-          ctx.userId,
-          'readOnly',
-          { pendingEditor: true }
-        )
-      })
-    })
 
     describe('when addUserIdToProject produces an error', function () {
       beforeEach(function (ctx) {

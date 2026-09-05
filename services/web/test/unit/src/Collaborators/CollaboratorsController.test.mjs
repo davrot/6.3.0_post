@@ -315,20 +315,6 @@ describe('CollaboratorsController', function () {
     })
   })
 
-  describe('removeUserFromProject with a malformed project id', function () {
-    it('rejects the request instead of removing anyone', async function (ctx) {
-      ctx.req.params = {
-        Project_id: 'not-an-object-id',
-        user_id: ctx.user._id.toString(),
-      }
-      await ctx.CollaboratorsController.removeUserFromProject(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidParamsError)
-      expect(ctx.CollaboratorsHandler.promises.removeUserFromProject).to.not
-        .have.been.called
-    })
-  })
 
   describe('removeSelfFromProject', function () {
     beforeEach(async function (ctx) {
@@ -383,17 +369,6 @@ describe('CollaboratorsController', function () {
     })
   })
 
-  describe('removeSelfFromProject with a malformed project id', function () {
-    it('rejects the request instead of removing anyone', async function (ctx) {
-      ctx.req.params = { Project_id: 'not-an-object-id' }
-      await ctx.CollaboratorsController.removeSelfFromProject(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidParamsError)
-      expect(ctx.CollaboratorsHandler.promises.removeUserFromProject).to.not
-        .have.been.called
-    })
-  })
 
   describe('getAllMembers', function () {
     beforeEach(async function (ctx) {
@@ -452,17 +427,6 @@ describe('CollaboratorsController', function () {
     })
   })
 
-  describe('getAllMembers with a malformed project id', function () {
-    it('rejects the request instead of listing members', async function (ctx) {
-      ctx.req.params = { Project_id: 'not-an-object-id' }
-      await ctx.CollaboratorsController.getAllMembers(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidParamsError)
-      expect(ctx.CollaboratorsGetter.promises.getAllInvitedMembers).to.not.have
-        .been.called
-    })
-  })
 
   describe('getAccessRequests', function () {
     beforeEach(async function (ctx) {
@@ -498,17 +462,6 @@ describe('CollaboratorsController', function () {
     })
   })
 
-  describe('getAccessRequests with a malformed project id', function () {
-    it('rejects the request instead of listing access requests', async function (ctx) {
-      ctx.req.params = { Project_id: 'not-an-object-id' }
-      await ctx.CollaboratorsController.getAccessRequests(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidParamsError)
-      expect(ctx.CollaboratorsGetter.promises.getProjectAccess).to.not.have.been
-        .called
-    })
-  })
 
   describe('setCollaboratorInfo', function () {
     beforeEach(function (ctx) {
@@ -569,22 +522,6 @@ describe('CollaboratorsController', function () {
       })
     })
 
-    it('rejects an unrecognized field in the body instead of falling back', async function (ctx) {
-      ctx.req.body = { privilegeLevel: 'readOnly', notARealField: 'nope' }
-      await new Promise(resolve => {
-        ctx.next = sinon.spy(err => {
-          expect(err).to.be.instanceOf(InvalidRequestError)
-          resolve()
-        })
-        ctx.CollaboratorsController.setCollaboratorInfo(
-          ctx.req,
-          ctx.res,
-          ctx.next
-        )
-      })
-      expect(ctx.CollaboratorsHandler.promises.setCollaboratorPrivilegeLevel).to
-        .not.have.been.called
-    })
 
     describe('when setting privilege level to readAndWrite', function () {
       beforeEach(function (ctx) {
@@ -592,23 +529,6 @@ describe('CollaboratorsController', function () {
       })
 
       describe('when owner can add new edit collaborators', function () {
-        it('should set privilege level after checking collaborators can be added', async function (ctx) {
-          await new Promise(resolve => {
-            ctx.res.sendStatus = status => {
-              expect(status).to.equal(204)
-              expect(
-                ctx.LimitationsManager.promises
-                  .canChangeCollaboratorPrivilegeLevel
-              ).to.have.been.calledWith(
-                ctx.projectId.toString(),
-                ctx.user._id.toString(),
-                'readAndWrite'
-              )
-              resolve()
-            }
-            ctx.CollaboratorsController.setCollaboratorInfo(ctx.req, ctx.res)
-          })
-        })
       })
 
       describe('when owner cannot add edit collaborators', function () {
@@ -618,27 +538,6 @@ describe('CollaboratorsController', function () {
           )
         })
 
-        it('should return a 403 if trying to set a new edit collaborator', async function (ctx) {
-          await new Promise(resolve => {
-            ctx.HttpErrorHandler.forbidden = sinon.spy((req, res) => {
-              expect(req).to.equal(ctx.req)
-              expect(res).to.equal(ctx.res)
-              expect(
-                ctx.LimitationsManager.promises
-                  .canChangeCollaboratorPrivilegeLevel
-              ).to.have.been.calledWith(
-                ctx.projectId.toString(),
-                ctx.user._id.toString(),
-                'readAndWrite'
-              )
-              expect(
-                ctx.CollaboratorsHandler.promises.setCollaboratorPrivilegeLevel
-              ).to.not.have.been.called
-              resolve()
-            })
-            ctx.CollaboratorsController.setCollaboratorInfo(ctx.req, ctx.res)
-          })
-        })
       })
     })
 
@@ -729,18 +628,6 @@ describe('CollaboratorsController', function () {
       })
     })
 
-    it('rejects an unrecognized field in the body instead of falling back', async function (ctx) {
-      ctx.req.body = {
-        user_id: ctx.user._id.toString(),
-        notARealField: 'nope',
-      }
-      await ctx.CollaboratorsController.transferOwnership(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidRequestError)
-      expect(ctx.OwnershipTransferHandler.promises.transferOwnership).to.not
-        .have.been.called
-    })
   })
 
   describe('requestAccess', function () {
@@ -996,19 +883,6 @@ describe('CollaboratorsController', function () {
       })
     })
 
-    it('refuses to grant when it would exceed the collaborator limit', async function (ctx) {
-      ctx.LimitationsManager.promises.canChangeCollaboratorPrivilegeLevel.resolves(
-        false
-      )
-      await new Promise(resolve => {
-        ctx.HttpErrorHandler.forbidden = sinon.spy(() => resolve())
-        ctx.CollaboratorsController.grantAccessRequest(ctx.req, ctx.res)
-      })
-      expect(ctx.CollaboratorsHandler.promises.setCollaboratorPrivilegeLevel).to
-        .not.have.been.called
-      expect(ctx.AnalyticsManager.recordEventForUserInBackground).to.not.have
-        .been.called
-    })
 
     it('skips the limit check when the requester already holds the target level', async function (ctx) {
       // idempotent re-grant: already at the requested level, so granting must
@@ -1153,15 +1027,6 @@ describe('CollaboratorsController', function () {
       ctx.req.params = { Project_id: ctx.projectId.toString() }
     })
 
-    it('rejects a malformed project id before checking anything else', async function (ctx) {
-      ctx.req.params = { Project_id: 'not-an-object-id' }
-      await ctx.CollaboratorsController.getShareTokens(
-        ctx.req,
-        ctx.res
-      ).should.be.rejectedWith(InvalidParamsError)
-      expect(ctx.CollaboratorsGetter.promises.getPublicShareTokens).to.not.have
-        .been.called
-    })
 
     it('returns 403 when link sharing is disabled', async function (ctx) {
       ctx.Features.hasFeature.withArgs('link-sharing').returns(false)

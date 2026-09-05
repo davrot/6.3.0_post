@@ -4,9 +4,7 @@ import logger from '@overleaf/logger'
 import UserGetter from '../../Features/User/UserGetter.mjs'
 import FeatureUsageRateLimiter from './FeatureUsageRateLimiter.mjs'
 import Settings from '@overleaf/settings'
-import FeaturesHelper from '../../Features/Subscription/FeaturesHelper.mjs'
 import AnalyticsManager from '../../Features/Analytics/AnalyticsManager.mjs'
-import SubscriptionViewModelBuilder from '../../Features/Subscription/SubscriptionViewModelBuilder.mjs'
 import UserAuditLogHandler from '../../Features/User/UserAuditLogHandler.mjs'
 
 class AiFeatureUsageRateLimiter extends FeatureUsageRateLimiter {
@@ -65,36 +63,14 @@ class AiFeatureUsageRateLimiter extends FeatureUsageRateLimiter {
    * @param {string} [tool]
    */
   async _recordLimitReachedEvent(userId, limit, tool) {
-    let planCode
-    let planType
-    try {
-      const { bestSubscription } =
-        await SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails(
-          {
-            _id: userId,
-          }
-        )
-      const subscription =
-        /** @type {import('../../Features/Subscription/CustomerIoPlanHelpers.mjs').BestSubscription} */ (
-          bestSubscription
-        )
-      planCode = subscription?.plan?.planCode
-      planType = subscription?.type
-    } catch (err) {
-      logger.warn(
-        { err, userId },
-        'failed to resolve plan for ai-usage-limit-reached event'
-      )
-    }
-
+    // OlliTeX fork (free-only): plan-code/plan-type analytics removed with the
+    // subscription feature; the event is still emitted for usage observability.
     AnalyticsManager.recordEventForUserInBackground(
       userId,
       'ai-usage-limit-reached',
       {
         limit,
         ...(tool ? { feature: tool } : {}),
-        ...(planCode ? { 'plan-code': planCode } : {}),
-        ...(planType ? { 'plan-type': planType } : {}),
       }
     )
   }
@@ -106,16 +82,13 @@ class AiFeatureUsageRateLimiter extends FeatureUsageRateLimiter {
   async _getAllowance(userId) {
     const user = await UserGetter.promises.getUser(userId, {
       features: 1,
-      writefull: 1,
     })
 
-    const wfQuota = user?.writefull?.isPremium
-      ? Settings.writefull.quotaTierGranted
-      : Settings.aiFeatures.freeQuota
-    const mergedFeatures = FeaturesHelper.mergeFeatures(user?.features, {
-      aiUsageQuota: wfQuota,
-    })
-    const quotaTier = mergedFeatures.aiUsageQuota
+    // OlliTeX fork (free-only): Writefull premium tiers and subscription
+    // feature-merge no longer exist; the allowance tier is the user's stored
+    // aiUsageQuota feature (admin-configurable) or the configured free tier.
+    const quotaTier = user?.features?.aiUsageQuota ||
+      Settings.aiFeatures.freeQuota
     return _quotaTierToAllowance(quotaTier)
   }
 }

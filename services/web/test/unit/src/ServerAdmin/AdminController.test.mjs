@@ -22,6 +22,11 @@ describe('AdminController', function () {
     ctx.ProjectGetter = {
       promises: { findAllDebugProjects: sinon.stub().resolves([]) },
     }
+    ctx.UserGetter = { promises: { getUser: sinon.stub().resolves(null) } }
+    ctx.SessionManager = {
+      getLoggedInUserId: sinon.stub().returns(null),
+      isUserLoggedIn: sinon.stub().returns(false),
+    }
     ctx.Modules = {
       promises: { hooks: { fire: sinon.stub().resolves([null]) } },
     }
@@ -47,6 +52,13 @@ describe('AdminController', function () {
     vi.doMock('../../../../app/src/Features/Project/ProjectGetter', () => ({
       default: ctx.ProjectGetter,
     }))
+    vi.doMock('../../../../app/src/Features/User/UserGetter', () => ({
+      default: ctx.UserGetter,
+    }))
+    vi.doMock(
+      '../../../../app/src/Features/Authentication/SessionManager',
+      () => ({ default: ctx.SessionManager })
+    )
     vi.doMock('../../../../app/src/infrastructure/Modules', () => ({
       default: ctx.Modules,
     }))

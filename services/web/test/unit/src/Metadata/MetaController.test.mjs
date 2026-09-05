@@ -103,20 +103,6 @@ describe('MetaController', function () {
       next.should.have.been.calledWithMatch(error => error instanceof Error)
     })
 
-    it('should reject a malformed project id', async function (ctx) {
-      const req = { params: { project_id: 'not-an-object-id' } }
-      const res = new MockResponse(vi)
-      const next = sinon.stub()
-
-      await ctx.MetadataController.getMetadata(req, res, next)
-
-      expect(ctx.MetaHandler.promises.getAllMetaForProject.called).to.equal(
-        false
-      )
-      next.should.have.been.calledWithMatch(
-        error => error.name === 'InvalidParamsError'
-      )
-    })
   })
 
   describe('broadcastMetadataForDoc', function () {

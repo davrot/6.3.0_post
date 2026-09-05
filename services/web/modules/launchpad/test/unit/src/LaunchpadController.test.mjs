@@ -134,6 +134,7 @@ describe('LaunchpadController', function () {
           )
           expect(ctx.res.render).toHaveBeenCalledTimes(1)
           expect(ctx.res.render).toHaveBeenCalledWith(viewPath, {
+            hideNavLogo: true,
             adminUserExists: false,
             authMethod: 'local',
           })
@@ -192,6 +193,7 @@ describe('LaunchpadController', function () {
           )
           expect(ctx.res.render).toHaveBeenCalledTimes(1)
           expect(ctx.res.render).toHaveBeenCalledWith(viewPath, {
+            hideNavLogo: true,
             wsUrl: undefined,
             adminUserExists: true,
             authMethod: 'local',
@@ -802,14 +804,19 @@ describe('LaunchpadController', function () {
 
       it('should have updated the user to make them an admin', function (ctx) {
         ctx.User.updateOne.callCount.should.equal(1)
+        // 6.3.0: the update also sets emails.confirmedAt (dynamic) and unsets
+        // hashedPassword — match on the stable keys.
         ctx.User.updateOne
-          .calledWith(
+          .calledWithMatch(
             { _id: ctx.user._id },
             {
               $set: {
                 isAdmin: true,
                 emails: [
-                  { email: ctx.user.email, reversedHostname: 'moc.elpmaxe' },
+                  sinon.match({
+                    email: ctx.user.email,
+                    reversedHostname: 'moc.elpmaxe',
+                  }),
                 ],
               },
             }

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Regression: after F13 (inline styles -> scss classes) + F14 (fetch-utils),
 // the admin settings page must still render fully with zero inline styles.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true

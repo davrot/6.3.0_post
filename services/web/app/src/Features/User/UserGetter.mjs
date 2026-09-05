@@ -9,7 +9,7 @@ import Features from '../../infrastructure/Features.mjs'
 import { User } from '../../models/User.mjs'
 import Mongo from '../Helpers/Mongo.mjs'
 import Modules from '../../infrastructure/Modules.mjs'
-import FeaturesHelper from '../Subscription/FeaturesHelper.mjs'
+import FeatureSets from '../Helpers/FeatureSets.mjs'
 import AsyncLocalStorage from '../../infrastructure/AsyncLocalStorage.mjs'
 
 const { normalizeQuery, normalizeMultiQuery } = Mongo
@@ -122,7 +122,7 @@ async function getUserFeatures(userId) {
     (await Modules.promises.hooks.fire('getModuleProvidedFeatures', userId)) ||
     []
 
-  return FeaturesHelper.computeFeatureSet([user.features, ...moduleFeatures])
+  return FeatureSets.computeFeatureSet([user.features, ...moduleFeatures])
 }
 
 async function getUserConfirmedEmails(userId) {

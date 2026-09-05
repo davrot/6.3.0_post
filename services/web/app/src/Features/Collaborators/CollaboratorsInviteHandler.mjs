@@ -12,7 +12,6 @@ import NotificationsBuilder from '../Notifications/NotificationsBuilder.mjs'
 import PrivilegeLevels, {
   isPrivilegeUpgrade,
 } from '../Authorization/PrivilegeLevels.mjs'
-import LimitationsManager from '../Subscription/LimitationsManager.mjs'
 import ProjectAuditLogHandler from '../Project/ProjectAuditLogHandler.mjs'
 import _ from 'lodash'
 
@@ -159,42 +158,8 @@ const CollaboratorsInviteHandler = {
 
     let privilegeLevel = invite.privileges
     const opts = {}
-    if (
-      [PrivilegeLevels.READ_AND_WRITE, PrivilegeLevels.REVIEW].includes(
-        invite.privileges
-      )
-    ) {
-      const allowed =
-        await LimitationsManager.promises.canAcceptEditCollaboratorInvite(
-          project._id
-        )
-      if (!allowed) {
-        privilegeLevel = PrivilegeLevels.READ_ONLY
-        if (invite.privileges === PrivilegeLevels.READ_AND_WRITE) {
-          opts.pendingEditor = true
-        } else if (invite.privileges === PrivilegeLevels.REVIEW) {
-          opts.pendingReviewer = true
-        }
-
-        logger.debug(
-          { projectId, userId: user._id, privileges: invite.privileges },
-          'no collaborator slots available, user added as read only (pending editor)'
-        )
-        await ProjectAuditLogHandler.promises.addEntry(
-          projectId,
-          'editor-moved-to-pending', // controller already logged accept-invite
-          null,
-          null,
-          {
-            userId: user._id.toString(),
-            role:
-              invite.privileges === PrivilegeLevels.REVIEW
-                ? 'reviewer'
-                : 'editor',
-          }
-        )
-      }
-    }
+    // OlliTeX fork (free-only): no SaaS edit-collaborator seat limits —
+    // invited users always keep the invited privilege level.
 
     await CollaboratorsHandler.promises.addUserIdToProject(
       projectId,

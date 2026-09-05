@@ -2,14 +2,10 @@ import Settings from '@overleaf/settings'
 import logger from '@overleaf/logger'
 import { fetchJson } from '@overleaf/fetch-utils'
 import { callbackify } from '@overleaf/promise-utils'
-import UserMembershipsHandler from '../UserMembership/UserMembershipsHandler.mjs'
-import UserMembershipEntityConfigs from '../UserMembership/UserMembershipEntityConfigs.mjs'
 
-async function getManagedPublishers(userId) {
-  return await UserMembershipsHandler.promises.getEntitiesByUser(
-    UserMembershipEntityConfigs.publisher,
-    userId
-  )
+async function getManagedPublishers() {
+  // OlliTeX fork (free-only): SaaS managed publishers removed — never any.
+  return []
 }
 
 async function fetchV1Data(publisher) {

@@ -31,7 +31,7 @@ export function SidebarLowerSection({
     useContactUsModal({
       autofillProjectUrl: false,
     })
-  const { sessionUser, showSubscriptionLink, items } = getMeta('ol-navbar')
+  const { sessionUser, items } = getMeta('ol-navbar')
   const helpItem = items.find(
     item => item.text === 'help_and_resources'
   ) as NavbarDropdownItemData
@@ -110,7 +110,6 @@ export function SidebarLowerSection({
               >
                 <AccountMenuItems
                   sessionUser={sessionUser}
-                  showSubscriptionLink={showSubscriptionLink}
                   showThemeToggle={showThemeToggle}
                 />
               </OLDropdownMenu>
@@ -119,7 +118,7 @@ export function SidebarLowerSection({
         </ul>
       </nav>
       <div className="ds-nav-ds-name" translate="no">
-        <span>CE+</span>
+        <span>OlliTeX</span>
       </div>
       <UserProvider>{contactUsModal}</UserProvider>
     </>

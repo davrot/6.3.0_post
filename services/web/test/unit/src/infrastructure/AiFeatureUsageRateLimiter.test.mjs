@@ -97,17 +97,6 @@ describe('AiFeatureUsageRateLimiter', function () {
       recordEventForUserInBackground: sinon.stub(),
     }
 
-    ctx.SubscriptionViewModelBuilder = {
-      promises: {
-        getUsersSubscriptionDetails: sinon.stub().resolves({
-          bestSubscription: {
-            type: 'individual',
-            plan: { planCode: 'professional' },
-          },
-        }),
-      },
-    }
-
     vi.doMock('@overleaf/settings', () => ({
       default: ctx.settings,
     }))
@@ -134,12 +123,6 @@ describe('AiFeatureUsageRateLimiter', function () {
       })
     )
 
-    vi.doMock(
-      '../../../../app/src/Features/Subscription/SubscriptionViewModelBuilder.mjs',
-      () => ({
-        default: ctx.SubscriptionViewModelBuilder,
-      })
-    )
 
     vi.doMock(
       '../../../../app/src/Features/SplitTests/SplitTestHandler.mjs',
@@ -247,8 +230,6 @@ describe('AiFeatureUsageRateLimiter', function () {
           {
             limit: ctx.settings.quotaGrants.ai.basic,
             feature: 'workbench-usage',
-            'plan-code': 'professional',
-            'plan-type': 'individual',
           }
         )
       })
@@ -370,7 +351,7 @@ describe('AiFeatureUsageRateLimiter', function () {
   })
 
   describe('_recordLimitReachedEvent', function () {
-    it('records ai-usage-limit-reached with plan-code, plan-type, limit and feature', async function (ctx) {
+    it('records ai-usage-limit-reached with limit and feature (free fork)', async function (ctx) {
       await ctx.AiFeatureUsageRateLimiter._recordLimitReachedEvent(
         ctx.userId,
         10,
@@ -385,60 +366,6 @@ describe('AiFeatureUsageRateLimiter', function () {
         {
           limit: 10,
           feature: 'workbench-usage',
-          'plan-code': 'professional',
-          'plan-type': 'individual',
-        }
-      )
-    })
-
-    it('records plan-type commons while plan-code reads as professional', async function (ctx) {
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails =
-        sinon.stub().resolves({
-          bestSubscription: {
-            type: 'commons',
-            plan: { planCode: 'professional' },
-          },
-        })
-
-      await ctx.AiFeatureUsageRateLimiter._recordLimitReachedEvent(
-        ctx.userId,
-        10,
-        'workbench-usage'
-      )
-
-      expect(
-        ctx.AnalyticsManager.recordEventForUserInBackground
-      ).to.have.been.calledOnceWithExactly(
-        ctx.userId,
-        'ai-usage-limit-reached',
-        {
-          limit: 10,
-          feature: 'workbench-usage',
-          'plan-code': 'professional',
-          'plan-type': 'commons',
-        }
-      )
-    })
-
-    it('omits plan-code but records plan-type free for free users', async function (ctx) {
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails =
-        sinon.stub().resolves({ bestSubscription: { type: 'free' } })
-
-      await ctx.AiFeatureUsageRateLimiter._recordLimitReachedEvent(
-        ctx.userId,
-        5,
-        'suggest-fix'
-      )
-
-      expect(
-        ctx.AnalyticsManager.recordEventForUserInBackground
-      ).to.have.been.calledOnceWithExactly(
-        ctx.userId,
-        'ai-usage-limit-reached',
-        {
-          limit: 5,
-          feature: 'suggest-fix',
-          'plan-type': 'free',
         }
       )
     })
@@ -456,34 +383,11 @@ describe('AiFeatureUsageRateLimiter', function () {
         'ai-usage-limit-reached',
         {
           limit: 10,
-          'plan-code': 'professional',
-          'plan-type': 'individual',
-        }
-      )
-    })
-
-    it('still records the event when the plan lookup fails', async function (ctx) {
-      ctx.SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails =
-        sinon.stub().rejects(new Error('boom'))
-
-      await ctx.AiFeatureUsageRateLimiter._recordLimitReachedEvent(
-        ctx.userId,
-        5,
-        'suggest-fix'
-      )
-
-      expect(
-        ctx.AnalyticsManager.recordEventForUserInBackground
-      ).to.have.been.calledOnceWithExactly(
-        ctx.userId,
-        'ai-usage-limit-reached',
-        {
-          limit: 5,
-          feature: 'suggest-fix',
         }
       )
     })
   })
+
 
   describe('getRemainingFeatureUses', function () {
     beforeEach(async function (ctx) {
@@ -511,16 +415,6 @@ describe('AiFeatureUsageRateLimiter', function () {
       )
     })
 
-    it('should give higher usage for assist bundle owners who have the feature via Writefull', async function (ctx) {
-      ctx.UserGetter.promises.getUser = sinon
-        .stub()
-        .resolves(ctx.userWithOLBundleThroughWf)
-      const usages =
-        await ctx.AiFeatureUsageRateLimiter.getRemainingFeatureUses(ctx.userId)
-      await expect(usages.aiFeatureUsage.remainingUsage).to.equal(
-        ctx.settings.quotaGrants.ai.unlimited
-      )
-    })
 
     it('should calculate remaining usages for free users', async function (ctx) {
       ctx.UserGetter.promises.getUser = sinon.stub().resolves(ctx.user)

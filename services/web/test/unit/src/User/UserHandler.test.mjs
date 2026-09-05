@@ -37,17 +37,6 @@ describe('UserHandler', function () {
     ctx.UserHandler = (await import(modulePath)).default
   })
 
-  describe('populateTeamInvites', function () {
-    beforeEach(async function (ctx) {
-      await ctx.UserHandler.promises.populateTeamInvites(ctx.user)
-    })
-
-    it('notifies the user about legacy team invites', function (ctx) {
-      ctx.TeamInvitesHandler.promises.createTeamInvitesForLegacyInvitedEmail
-        .calledWith(ctx.user.email)
-        .should.eq(true)
-    })
-  })
 
   describe('countActiveUsers', function () {
     it('return user count from DB lookup', async function (ctx) {

@@ -29,13 +29,11 @@ export function ActionButton({
   const linkingText = linkText || t('turn_on')
   const unlinkingText = unlinkText || t('turn_off')
   if (!hasFeature) {
+    // OlliTeX fork (free-only): no paid upgrade path for this integration —
+    // show a disabled state instead of linking to the removed SaaS plans page.
     return (
-      <OLButton
-        variant="primary"
-        href="/user/subscription/plans"
-        onClick={trackUpgradeClick}
-      >
-        <span>{t('upgrade')}</span>
+      <OLButton variant="primary" disabled>
+        <span>{t('disabled')}</span>
       </OLButton>
     )
   } else if (linked) {

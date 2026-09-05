@@ -67,6 +67,11 @@ The local-first, self-hosted approach to LaTeX editing was inspired by
 with real-time collaboration and offline support, by
 [Fares Abawi](https://github.com/fabawi) (fabawi).
 
+The end-to-end test suite in [`tests/e2e`](tests/e2e) (dedicated disposable test
+stack, self-seeding fixture journeys, composable test infrastructure) was
+inspired by the testing practices of
+[Forgejo](https://codeberg.org/forgejo/forgejo).
+
 # Acknowledgments
 
 Thanks to the users of the project for valuable feedback, suggestions,

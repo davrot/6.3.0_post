@@ -133,14 +133,6 @@ describe('AuthenticationController', function () {
       }),
     }))
 
-    vi.doMock('../../../../app/src/Features/User/UserHandler', () => ({
-      default: (ctx.UserHandler = {
-        promises: {
-          populateTeamInvites: sinon.stub().resolves(),
-        },
-      }),
-    }))
-
     vi.doMock(
       '../../../../app/src/Features/Analytics/AnalyticsManager',
       () => ({
@@ -194,17 +186,6 @@ describe('AuthenticationController', function () {
       default: { User: ctx.UserModel },
     }))
 
-    ctx.Oauth2Server = {
-      Request: sinon.stub(),
-      Response: sinon.stub(),
-      server: {
-        authenticate: sinon.stub(),
-      },
-    }
-
-    vi.doMock('../../../../modules/oauth2-server/app/src/Oauth2Server', () => ({
-      default: ctx.Oauth2Server,
-    }))
 
     vi.doMock('../../../../app/src/Features/Helpers/UrlHelper', () => ({
       default: (ctx.UrlHelper = {
@@ -621,10 +602,6 @@ describe('AuthenticationController', function () {
         })
       })
 
-      it('should not setup the user data in the background', function (ctx) {
-        ctx.UserHandler.promises.populateTeamInvites.called.should.equal(false)
-      })
-
       it('should record a failed login', function (ctx) {
         ctx.AuthenticationController._recordFailedLogin.called.should.equal(
           true
@@ -683,132 +660,6 @@ describe('AuthenticationController', function () {
     })
   })
 
-  describe('requireOauth', function () {
-    beforeEach(function (ctx) {
-      ctx.res.json = sinon.stub()
-      ctx.res.status = sinon.stub().returns(ctx.res)
-      ctx.res.sendStatus = sinon.stub()
-      ctx.middleware = ctx.AuthenticationController.requireOauth('scope')
-    })
-
-    describe('when Oauth2Server authenticates', function () {
-      beforeEach(async function (ctx) {
-        ctx.token = {
-          accessToken: 'token',
-          user: 'user',
-        }
-        ctx.Oauth2Server.server.authenticate.resolves(ctx.token)
-        await ctx.middleware(ctx.req, ctx.res)
-      })
-
-      it('should set oauth_token on request', function (ctx) {
-        ctx.req.oauth_token.should.equal(ctx.token)
-      })
-
-      it('should set oauth on request', function (ctx) {
-        ctx.req.oauth.access_token.should.equal(ctx.token.accessToken)
-      })
-
-      it('should set oauth_user on request', function (ctx) {
-        ctx.req.oauth_user.should.equal('user')
-      })
-    })
-
-    describe('when Oauth2Server returns 401 error', function () {
-      beforeEach(async function (ctx) {
-        await new Promise(resolve => {
-          ctx.res.json.callsFake(() => resolve())
-          ctx.Oauth2Server.server.authenticate.rejects({ code: 401 })
-          ctx.middleware(ctx.req, ctx.res, ctx.next)
-        })
-      })
-
-      it('should return 401 error', function (ctx) {
-        ctx.res.status.should.have.been.calledWith(401)
-      })
-
-      it('should not call next', function (ctx) {
-        ctx.next.should.have.not.been.calledOnce
-      })
-    })
-
-    describe('error_code classification', function () {
-      // The classifier reads err.name (RFC-standard snake_case from
-      // @node-oauth/oauth2-server) plus an overleafErrorCode marker we
-      // attach ourselves. No reliance on err.message — that keeps the
-      // classification immune to library description changes.
-      async function runMiddlewareWithError(ctx, err) {
-        await new Promise(resolve => {
-          ctx.res.json.callsFake(() => resolve())
-          ctx.Oauth2Server.server.authenticate.rejects(err)
-          ctx.middleware(ctx.req, ctx.res, ctx.next)
-        })
-      }
-
-      it('returns "token_expired" when Oauth2ServerModel marks the error', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 401,
-          name: 'invalid_token',
-          overleafErrorCode: 'token_expired',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'token_expired',
-        })
-      })
-
-      it('returns "token_invalid" for an invalid_token error without a marker', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 401,
-          name: 'invalid_token',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'token_invalid',
-        })
-      })
-
-      it('returns "token_malformed" for a malformed authorization header', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 400,
-          name: 'invalid_request',
-          message: 'Invalid request: malformed authorization header',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'token_malformed',
-        })
-      })
-
-      it('returns "invalid_request" for any other invalid_request error', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 400,
-          name: 'invalid_request',
-          message: 'Invalid request: something else',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'invalid_request',
-        })
-      })
-
-      it('returns "insufficient_scope" for an insufficient_scope error', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 403,
-          name: 'insufficient_scope',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'insufficient_scope',
-        })
-      })
-
-      it('returns "unauthorized_request" for an unauthorized_request error', async function (ctx) {
-        await runMiddlewareWithError(ctx, {
-          code: 401,
-          name: 'unauthorized_request',
-        })
-        ctx.res.json.should.have.been.calledWithMatch({
-          error_code: 'unauthorized_request',
-        })
-      })
-    })
-  })
 
   describe('requireGlobalLogin', function () {
     beforeEach(function (ctx) {
@@ -1306,7 +1157,6 @@ describe('AuthenticationController', function () {
       ctx.AuthenticationController._clearRedirectFromSession = sinon.stub()
       ctx.AuthenticationController._redirectToReconfirmPage = sinon.stub()
       ctx.UserSessionsManager.trackSession = sinon.stub()
-      ctx.UserHandler.promises.populateTeamInvites = sinon.stub().resolves()
       ctx.LoginRateLimiter.recordSuccessfulLogin = sinon.stub()
       ctx.AuthenticationController._recordSuccessfulLogin = sinon.stub()
       ctx.AnalyticsManager.recordEvent = sinon.stub()
@@ -1632,12 +1482,6 @@ describe('AuthenticationController', function () {
           ctx.user._id,
           ctx.req.session.analyticsId
         )
-      })
-
-      it('should setup the user data in the background', function (ctx) {
-        ctx.UserHandler.promises.populateTeamInvites
-          .calledWith(ctx.user)
-          .should.equal(true)
       })
 
       it('should set res.session.justLoggedIn', function (ctx) {

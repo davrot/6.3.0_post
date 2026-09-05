@@ -117,11 +117,11 @@ describe('UserRegistrationHandler', function () {
   })
 
   describe('validate Register Request', function () {
-    it('allows passing validation through', function (ctx) {
-      const result = ctx.handler.promises._registrationRequestIsValid(
+    it('allows passing validation through', async function (ctx) {
+      const result = await ctx.handler.promises._registrationRequestIsValid(
         ctx.passingRequest
       )
-      result.should.equal(true)
+      expect(result).to.equal(true)
     })
 
     describe('failing email validation', function () {
@@ -131,11 +131,16 @@ describe('UserRegistrationHandler', function () {
         })
       })
 
-      it('does not allow through', function (ctx) {
-        const result = ctx.handler.promises._registrationRequestIsValid(
-          ctx.passingRequest
-        )
-        return result.should.equal(false)
+      it('does not allow through', async function (ctx) {
+        let threw = false
+        try {
+          await ctx.handler.promises._registrationRequestIsValid(
+            ctx.passingRequest
+          )
+        } catch (err) {
+          threw = /InvalidEmailError/.test(`${err.code || ''}${err.message || ''}`)
+        }
+        expect(threw).to.equal(true)
       })
     })
 
@@ -146,11 +151,16 @@ describe('UserRegistrationHandler', function () {
         })
       })
 
-      it('does not allow through', function (ctx) {
-        const result = ctx.handler.promises._registrationRequestIsValid(
-          ctx.passingRequest
-        )
-        result.should.equal(false)
+      it('does not allow through', async function (ctx) {
+        let threw = false
+        try {
+          await ctx.handler.promises._registrationRequestIsValid(
+            ctx.passingRequest
+          )
+        } catch (err) {
+          threw = /InvalidPasswordError/.test(`${err.code || ''}${err.message || ''}`)
+        }
+        expect(threw).to.equal(true)
       })
     })
   })

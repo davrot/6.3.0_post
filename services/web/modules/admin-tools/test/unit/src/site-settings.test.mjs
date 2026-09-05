@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+import { afterAll, beforeAll, afterEach, beforeEach, describe, it } from 'vitest'
 
 // Hermetic unit tests (added 2026-08-28): point the manager at a dedicated
 // database so the LIVE site_settings document (stored-wins semantics)
@@ -29,10 +30,16 @@ const {
   decryptText,
 } = await import('../../../../../app/src/Features/SiteSettings/SecretCipher.mjs')
 globalThis.__ssm = await import('../../../../../app/src/Features/SiteSettings/SiteSettingsManager.mjs')
-const { default: mongodb } = await import('mongodb-legacy')
-const { MongoClient } = mongodb
-
-const unitDb = new MongoClient(process.env.MONGO_URL).db()
+// Hermetic collection access must go through the SAME shared db module the
+// SUT uses: with vitest's isolate:false module registry is shared across
+// test files in a worker, and the SUT's mongodb.mjs binds to whichever
+// file imported it first (possibly with a different MONGO_URL).
+const dbModule = await import(
+  '../../../../../app/src/infrastructure/mongodb.mjs'
+)
+await dbModule.connectionPromise
+const ssCol = await dbModule.getCollectionInternal('site_settings')
+const snapsCol = await dbModule.getCollectionInternal('site_settings_snapshots')
 
 describe('SiteSettings', () => {
   function assertUnitDb (label) {
@@ -51,7 +58,7 @@ describe('SiteSettings', () => {
 
   it('cleans a pre-existing unit test collection (hermetic start)', async () => {
     assertUnitDb('hermetic start')
-    await unitDb.collection('site_settings').deleteMany({})
+    await ssCol.deleteMany({})
   })
   describe('DEFAULT_TEMPLATE_CATEGORIES', () => {
     it('carries the manual’s 12 example categories with names/descriptions', () => {
@@ -161,19 +168,25 @@ describe('SiteSettings', () => {
 
     it('keeps per-section validators registered', () => {
       expect(Object.keys(SECTION_VALIDATORS).sort()).to.deep.equal([
+        'branding',
+        'dropbox',
         'email',
         'externalUrl',
         'git-integration',
         'github-sync',
+        'languagetool',
         'linked-file-types',
+        'llm',
         'misc',
         'pandoc',
         'sandboxed-compiles',
+        'services',
         'signup',
         'sso-ldap',
         'sso-oidc',
         'sso-saml',
         'templates',
+        'webdav',
         'zotero',
       ])
     })
@@ -504,7 +517,8 @@ describe('SiteSettings', () => {
     // mis-set. Scoped deletes on the test's own collections are sufficient
     // for the hermetic start of the next run and can never touch live data.
     for (const name of ['site_settings', 'site_settings_snapshots']) {
-      await unitDb.collection(name).deleteMany({}).catch(() => {})
+      const col = await dbModule.getCollectionInternal(name)
+      await col.deleteMany({}).catch(() => {})
     }
   })
 
@@ -561,9 +575,9 @@ describe('SiteSettings', () => {
     it('writes a recoverable snapshot after each save', async () => {
       const m = globalThis.__ssm
       await m.setSection('pandoc', { enabled: true, image: 'pandoc-ol:snap-shot' })
-      const doc = await unitDb.collection('site_settings').findOne({ _id: 'global' })
+      const doc = await ssCol.findOne({ _id: 'global' })
       expect(doc.pandoc.image).to.equal('pandoc-ol:snap-shot')
-      const snaps = await unitDb.collection('site_settings_snapshots').find({}).toArray()
+      const snaps = await snapsCol.find({}).toArray()
       expect(snaps.length).to.be.greaterThan(0)
       const latest = snaps[snaps.length - 1]
       expect(latest.doc.pandoc.image).to.equal('pandoc-ol:snap-shot')

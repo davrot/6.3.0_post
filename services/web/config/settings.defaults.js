@@ -495,7 +495,6 @@ function buildSettings() {
   )
     ? process.env.DEFAULT_LATEX_COMPILER
     : 'pdflatex',
-  enableSubscriptions: false,
   restrictedCountries: [],
   enableOnboardingEmails: process.env.ENABLE_ONBOARDING_EMAILS === 'true',
 

@@ -1,8 +1,6 @@
-import Features from './Features.mjs'
 import Queues from './Queues.mjs'
 import UserOnboardingEmailManager from '../Features/User/UserOnboardingEmailManager.mjs'
 import UserPostRegistrationAnalyticsManager from '../Features/User/UserPostRegistrationAnalyticsManager.mjs'
-import FeaturesUpdater from '../Features/Subscription/FeaturesUpdater.mjs'
 
 import {
   addOptionalCleanupHandlerBeforeStoppingTraffic,
@@ -33,10 +31,11 @@ function registerQueue(queueName, handler) {
 }
 
 function start() {
-  if (!Features.hasFeature('saas')) {
-    return
-  }
-
+  // 2026-09-05 (OlliTeX fork): the upstream `saas` gate silently disabled ALL
+  // queue workers on CE (onboarding emails, registration analytics, deferred
+  // emails, project notifications). This fork is free-only: run the core
+  // queues unconditionally; SaaS queues (feature refresh, group SSO reminder,
+  // subscription webhooks) are removed with the subscription feature.
   registerQueue('scheduled-jobs', async job => {
     const { queueName, name, data, options } = job.data
     const queue = Queues.getQueue(queueName)
@@ -57,11 +56,6 @@ function start() {
     await UserPostRegistrationAnalyticsManager.postRegistrationAnalytics(userId)
   })
 
-  registerQueue('refresh-features', async job => {
-    const { userId, reason } = job.data
-    await FeaturesUpdater.promises.refreshFeatures(userId, reason)
-  })
-
   registerQueue('deferred-emails', async job => {
     const { emailType, opts } = job.data
     try {
@@ -69,41 +63,6 @@ function start() {
     } catch (e) {
       const error = OError.tag(e, 'failed to send deferred email')
       logger.warn({ error, emailType }, error.message)
-      throw error
-    }
-  })
-
-  registerQueue('group-sso-reminder', async job => {
-    const { userId, subscriptionId } = job.data
-    try {
-      await Modules.promises.hooks.fire(
-        'sendGroupSSOReminder',
-        userId,
-        subscriptionId
-      )
-    } catch (e) {
-      const error = OError.tag(
-        e,
-        'failed to send scheduled Group SSO account linking reminder'
-      )
-      logger.warn({ error, userId, subscriptionId }, error.message)
-      throw error
-    }
-  })
-
-  registerQueue('deferred-subscription-webhook-event', async job => {
-    const { eventId, eventType, serviceId } = job.data
-    try {
-      await Modules.promises.hooks.fire(
-        'handleDeferredSubscriptionWebhookEvent',
-        job.data
-      )
-    } catch (e) {
-      const error = OError.tag(
-        e,
-        'failed to handle deferred subscription webhook event'
-      )
-      logger.warn({ error, eventId, eventType, serviceId }, error.message)
       throw error
     }
   })

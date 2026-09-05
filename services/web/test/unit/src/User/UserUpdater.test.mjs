@@ -319,12 +319,6 @@ describe('UserUpdater', function () {
       ).to.have.been.calledWith(ctx.user._id, ctx.user.email)
     })
 
-    it('refreshes features', function (ctx) {
-      sinon.assert.calledWith(
-        ctx.FeaturesUpdater.promises.refreshFeatures,
-        ctx.user._id
-      )
-    })
 
     it('sets the default email', function (ctx) {
       expect(ctx.db.users.updateOne).to.have.been.calledWith(
@@ -511,17 +505,6 @@ describe('UserUpdater', function () {
       args[1].should.equal(ctx.newEmail)
     })
 
-    it('refreshes features', async function (ctx) {
-      await ctx.UserUpdater.promises.removeEmailAddress(
-        ctx.user._id,
-        ctx.newEmail,
-        ctx.auditLog
-      )
-      sinon.assert.calledWith(
-        ctx.FeaturesUpdater.promises.refreshFeatures,
-        ctx.user._id
-      )
-    })
 
     it('handles Mongo errors', async function (ctx) {
       const anError = new Error('nope')
@@ -1110,13 +1093,6 @@ describe('UserUpdater', function () {
       expect(ctx.db.users.updateOne).to.not.have.been.called
     })
 
-    it('refreshes features', async function (ctx) {
-      await ctx.UserUpdater.promises.confirmEmail(ctx.user._id, ctx.newEmail)
-      sinon.assert.calledWith(
-        ctx.FeaturesUpdater.promises.refreshFeatures,
-        ctx.user._id
-      )
-    })
 
     it('should not call redundantPersonalSubscription when user is not on a commons license', async function (ctx) {
       ctx.InstitutionsAPI.promises.getUserAffiliations.resolves([])
@@ -1160,25 +1136,6 @@ describe('UserUpdater', function () {
         )
       })
 
-      it('creates redundant subscription notification', async function (ctx) {
-        await ctx.UserUpdater.promises.confirmEmail(ctx.user._id, ctx.newEmail)
-        sinon.assert.calledWith(
-          ctx.InstitutionsAPI.promises.getUserAffiliations,
-          ctx.user._id
-        )
-        sinon.assert.calledWith(
-          ctx.SubscriptionLocator.promises.getUserIndividualSubscription,
-          ctx.user._id
-        )
-        sinon.assert.calledWith(
-          ctx.NotificationsBuilder.promises.redundantPersonalSubscription,
-          {
-            institutionId: 123,
-            institutionName: 'Institution',
-          },
-          { _id: ctx.user._id }
-        )
-      })
     })
   })
 

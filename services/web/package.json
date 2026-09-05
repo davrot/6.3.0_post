@@ -59,19 +59,15 @@
     "local:test:acceptance:run_app": "OVERLEAF_CONFIG=$(pwd)/test/acceptance/config/settings.test.${OVERLEAF_APP}.js yarn run local:test:acceptance:run_dir -- $(pwd)/test/acceptance/src",
     "local:test:acceptance:run_module": "if [ ! -d $(pwd)/modules/${MODULE}/test/acceptance ]; then echo \"Module '${MODULE}' does not have acceptance tests\"; exit 0; fi; OVERLEAF_CONFIG=$(pwd)/modules/${MODULE}/test/acceptance/config/settings.test.js BASE_CONFIG=$(pwd)/test/acceptance/config/settings.test.${OVERLEAF_APP}.js yarn run local:test:acceptance:run_dir -- $(pwd)/modules/${MODULE}/test/acceptance",
     "local:test:acceptance:run_modules": "OVERLEAF_CONFIG=$(pwd)/test/acceptance/config/settings.test.${OVERLEAF_APP}.js node $(pwd)/test/acceptance/getModuleTargets --name-only | xargs -n1 sh -c 'MODULE=$0 yarn run local:test:acceptance:run_module || exit 255' $1",
-    "local:test:acceptance:app:saas": "OVERLEAF_APP=saas yarn run local:test:acceptance:run_app",
-    "local:test:acceptance:app:server-pro": "OVERLEAF_APP=server-pro yarn run local:test:acceptance:run_app",
     "local:test:acceptance:app:server-ce": "OVERLEAF_APP=server-ce yarn run local:test:acceptance:run_app",
-    "local:test:acceptance:app": "echo saas server-pro server-ce | xargs -n1 sh -c 'yarn run local:test:acceptance:app:${0} || exit 255'",
-    "local:test:acceptance:modules:saas": "OVERLEAF_APP=saas yarn run local:test:acceptance:run_modules",
-    "local:test:acceptance:modules:server-pro": "OVERLEAF_APP=server-pro yarn run local:test:acceptance:run_modules",
     "local:test:acceptance:modules:server-ce": "OVERLEAF_APP=server-ce yarn run local:test:acceptance:run_modules",
-    "local:test:acceptance:modules": "echo saas server-ce server-pro | xargs -n1 sh -c 'yarn run local:test:acceptance:modules:${0} || exit 255'",
     "local:test:acceptance": "yarn run local:test:acceptance:app && yarn run local:test:acceptance:modules",
     "local:test:unit": "yarn run test:unit:all",
     "local:test:frontend": "yarn run test:frontend",
     "local:test": "yarn run local:test:unit && yarn run local:test:frontend && yarn run local:test:acceptance",
-    "knip": "knip --config knip.ts"
+    "knip": "knip --config knip.ts",
+    "local:test:acceptance:app": "yarn run local:test:acceptance:app:server-ce",
+    "local:test:acceptance:modules": "yarn run local:test:acceptance:modules:server-ce"
   },
   "browserslist": [
     "defaults and supports woff2",

@@ -5,18 +5,11 @@ import { User } from '../../models/User.mjs'
 import { DeletedUser } from '../../models/DeletedUser.mjs'
 import { UserAuditLogEntry } from '../../models/UserAuditLogEntry.mjs'
 import ProjectDeleter from '../Project/ProjectDeleter.mjs'
-import SubscriptionHandler from '../Subscription/SubscriptionHandler.mjs'
-import SubscriptionUpdater from '../Subscription/SubscriptionUpdater.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
-import UserMembershipsHandler from '../UserMembership/UserMembershipsHandler.mjs'
 import UserSessionsManager from './UserSessionsManager.mjs'
 import UserAuditLogHandler from './UserAuditLogHandler.mjs'
-import InstitutionsAPI from '../Institutions/InstitutionsAPI.mjs'
 import Modules from '../../infrastructure/Modules.mjs'
-import Errors from '../Errors/Errors.js'
 import OnboardingDataCollectionManager from '../OnboardingDataCollection/OnboardingDataCollectionManager.mjs'
 import EmailHandler from '../Email/EmailHandler.mjs'
-import Features from '../../infrastructure/Features.mjs'
 
 export default {
   deleteUser: callbackify(deleteUser),
@@ -161,12 +154,8 @@ async function expireDeletedUsersAfterDuration() {
 }
 
 async function ensureCanDeleteUser(user) {
-  if (!Features.hasFeature('saas')) return
-  const subscription =
-    await SubscriptionLocator.promises.getUsersSubscription(user)
-  if (subscription) {
-    throw new Errors.SubscriptionAdminDeletionError({})
-  }
+  // OlliTeX fork (free-only): SaaS subscription deletion guard removed.
+  // (upstream blocked deletion of paid users; nothing to guard in a free fork)
 }
 
 async function _sendDeleteEmail(user, force) {
@@ -217,16 +206,8 @@ async function _cleanupUser(user) {
 
   logger.info({ userId }, '[cleanupUser] removing user sessions from Redis')
   await UserSessionsManager.promises.removeSessionsFromRedis(user)
-  if (Features.hasFeature('saas')) {
-    logger.info({ userId }, '[cleanupUser] cancelling subscription')
-    await SubscriptionHandler.promises.cancelSubscription(user)
-    logger.info({ userId }, '[cleanupUser] deleting affiliations')
-    await InstitutionsAPI.promises.deleteAffiliations(userId)
-    logger.info({ userId }, '[cleanupUser] removing user from groups')
-    await SubscriptionUpdater.promises.removeUserFromAllGroups(userId)
-    logger.info({ userId }, '[cleanupUser] removing user from memberships')
-    await UserMembershipsHandler.promises.removeUserFromAllEntities(userId)
-  }
+  // OlliTeX fork (free-only): SaaS subscription/group/membership cleanup
+  // removed (no paid subscriptions or groups exist in this fork).
   logger.info({ userId }, '[cleanupUser] removing personal access tokens')
   await Modules.promises.hooks.fire('cleanupPersonalAccessTokens', userId, [
     'collabratec',

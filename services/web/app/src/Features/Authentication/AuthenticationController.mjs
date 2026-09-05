@@ -9,7 +9,6 @@ import querystring from 'node:querystring'
 import Settings from '@overleaf/settings'
 import basicAuth from 'basic-auth'
 import tsscmp from 'tsscmp'
-import UserHandler from '../User/UserHandler.mjs'
 import UserSessionsManager from '../User/UserSessionsManager.mjs'
 import Analytics from '../Analytics/AnalyticsManager.mjs'
 import passport from 'passport'
@@ -27,7 +26,7 @@ import AnalyticsRegistrationSourceHelper from '../Analytics/AnalyticsRegistratio
 import { acceptsJson } from '../../infrastructure/RequestContentTypeDetection.mjs'
 import AdminAuthorizationHelper from '../Helpers/AdminAuthorizationHelper.mjs'
 import Modules from '../../infrastructure/Modules.mjs'
-import { expressify, promisify } from '@overleaf/promise-utils'
+import { promisify } from '@overleaf/promise-utils'
 import { handleAuthenticateErrors } from './AuthenticationErrors.mjs'
 import EmailHelper from '../Helpers/EmailHelper.mjs'
 import SplitTestHandler from '../SplitTests/SplitTestHandler.mjs'
@@ -74,30 +73,6 @@ function checkCredentials(userDetailsMap, user, password) {
   return isValid
 }
 
-// Map a thrown @node-oauth/oauth2-server error to a stable, machine-readable
-// code that callers (e.g. git-bridge) can switch on. err.name values come
-// from the library's error classes (snake_case OAuth standard names per
-// RFC 6749/6750). The token_expired distinction is driven by a marker we
-// set ourselves in Oauth2ServerModel.getAccessToken, so it survives library
-// upgrades that might change error_description text.
-function _classifyOauthError(err) {
-  switch (err?.name) {
-    case 'invalid_token':
-      return err.overleafErrorCode === 'token_expired'
-        ? 'token_expired'
-        : 'token_invalid'
-    case 'invalid_request':
-      return err.overleafErrorCode === 'token_malformed'
-        ? 'token_malformed'
-        : 'invalid_request'
-    case 'insufficient_scope':
-      return 'insufficient_scope'
-    case 'unauthorized_request':
-      return 'unauthorized_request'
-    default:
-      return 'unknown'
-  }
-}
 
 // TODO: Finish making these methods async
 const AuthenticationController = {
@@ -403,52 +378,6 @@ const AuthenticationController = {
     return doRequest
   },
 
-  /**
-   * @param {string} scope
-   * @return {import('express').Handler}
-   */
-  requireOauth(scope) {
-    if (typeof scope !== 'string' || !scope) {
-      throw new Error(
-        "requireOauth() expects a non-empty string as 'scope' parameter"
-      )
-    }
-
-    const middleware = async (req, res, next) => {
-      const Oauth2Server = (
-        await import('../../../../modules/oauth2-server/app/src/Oauth2Server.mjs')
-      ).default
-
-      const request = new Oauth2Server.Request(req)
-      const response = new Oauth2Server.Response(res)
-      try {
-        const token = await Oauth2Server.server.authenticate(
-          request,
-          response,
-          { scope }
-        )
-        req.oauth = { access_token: token.accessToken }
-        req.oauth_token = token
-        req.oauth_user = token.user
-        next()
-      } catch (err) {
-        if (
-          err.code === 400 &&
-          err.message === 'Invalid request: malformed authorization header'
-        ) {
-          err.code = 401
-          err.overleafErrorCode = 'token_malformed'
-        }
-        // send all other errors
-        res.status(err.code).json({
-          error: err.name,
-          error_description: err.message,
-          error_code: _classifyOauthError(err),
-        })
-      }
-    }
-    return expressify(middleware)
-  },
 
   _globalLoginWhitelist: [],
   addEndpointToLoginWhitelist(endpoint) {
@@ -694,9 +623,6 @@ function _afterLoginSessionSetup(req, user, callback) {
 const _afterLoginSessionSetupAsync = promisify(_afterLoginSessionSetup)
 
 function _loginAsyncHandlers(req, user, anonymousAnalyticsId, isNewUser) {
-  UserHandler.promises.populateTeamInvites(user).catch(err => {
-    logger.warn({ err }, 'error setting up login data')
-  })
   SplitTestHandler.promises.userMaintenanceOnLogin(user).catch(err => {
     const userId = user._id
     logger.warn({ err, userId }, 'error cleaning up split-tests on login')

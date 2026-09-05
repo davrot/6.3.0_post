@@ -19,7 +19,21 @@ if (process.env.CI && process.env.JUNIT_ROOT_SUITE_NAME) {
   }
 }
 
+const path = require('node:path')
+
 module.exports = defineConfig({
+  resolve: {
+    alias: {
+      '@': path.join(__dirname, 'frontend/js'),
+    },
+  },
+  esbuild: {
+    // Repo components rely on the automatic JSX runtime (babel preset-react
+    // classic-free); esbuild's default 'transform' runtime requires a React
+    // import in every file — align vitest with the webpack build.
+    jsx: 'automatic',
+  },
+
   test: {
     setupFiles: ['./test/unit/unit-env.mjs', './test/unit/bootstrap.mjs'],
     globals: false,

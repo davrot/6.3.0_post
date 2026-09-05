@@ -369,83 +369,6 @@ describe('TokenAccessController', function () {
       })
     })
 
-    describe('when there are no edit collaborator slots available', function () {
-      beforeEach(async function (ctx) {
-        ctx.LimitationsManager.promises.canAcceptEditCollaboratorInvite.resolves(
-          false
-        )
-        ctx.req.params = { token: ctx.token }
-        ctx.req.body = {
-          confirmedByUser: true,
-          tokenHashPrefix: '#prefix',
-        }
-        await new Promise((resolve, reject) => {
-          ctx.res.callback = resolve
-          ctx.TokenAccessController.grantTokenAccessReadAndWrite(
-            ctx.req,
-            ctx.res,
-            ctx.rejectOnError(reject)
-          )
-        })
-      })
-
-      it('adds the user as a read only invited member instead (pendingEditor)', function (ctx) {
-        expect(
-          ctx.CollaboratorsHandler.promises.addUserIdToProject
-        ).to.have.been.calledWith(
-          ctx.project._id,
-          undefined,
-          ctx.user._id,
-          PrivilegeLevels.READ_ONLY,
-          { pendingEditor: true }
-        )
-      })
-
-      it('writes a project audit log', function (ctx) {
-        expect(
-          ctx.ProjectAuditLogHandler.promises.addEntry
-        ).to.have.been.calledWith(
-          ctx.project._id,
-          'accept-via-link-sharing',
-          ctx.user._id,
-          ctx.req.ip,
-          { privileges: 'readOnly', pendingEditor: true }
-        )
-      })
-
-      it('records a project-joined event for the user', function (ctx) {
-        expect(
-          ctx.AnalyticsManager.recordEventForSession
-        ).to.have.been.calledWith(ctx.req.session, 'project-joined', {
-          mode: 'view',
-          projectId: ctx.project._id.toString(),
-          pendingEditor: true,
-          ownerId: ctx.project.owner_ref.toString(),
-          role: PrivilegeLevels.READ_ONLY,
-          source: 'link-sharing',
-        })
-      })
-
-      it('emits a project membership changed event', function (ctx) {
-        expect(ctx.EditorRealTimeController.emitToRoom).to.have.been.calledWith(
-          ctx.project._id,
-          'project:membership:changed',
-          { members: true, invites: true }
-        )
-      })
-
-      it('checks token hash', function (ctx) {
-        expect(
-          ctx.TokenAccessHandler.checkTokenHashPrefix
-        ).to.have.been.calledWith(
-          ctx.token,
-          '#prefix',
-          'readAndWrite',
-          ctx.user._id,
-          { projectId: ctx.project._id, action: 'continue' }
-        )
-      })
-    })
 
     describe('when the access was already granted', function () {
       beforeEach(async function (ctx) {
@@ -1198,45 +1121,6 @@ describe('TokenAccessController', function () {
       })
     })
 
-    describe('when there are no edit collaborator slots available', function () {
-      beforeEach(function (ctx) {
-        ctx.LimitationsManager.promises.canAcceptEditCollaboratorInvite.resolves(
-          false
-        )
-      })
-
-      describe('previously joined token access user moving to named collaborator', function () {
-        beforeEach(async function (ctx) {
-          ctx.CollaboratorsGetter.promises.isUserInvitedMemberOfProject.resolves(
-            false
-          )
-          await new Promise((resolve, reject) => {
-            ctx.res.callback = resolve
-            ctx.TokenAccessController.moveReadWriteToCollaborators(
-              ctx.req,
-              ctx.res,
-              ctx.rejectOnError(reject)
-            )
-          })
-        })
-
-        it('sets the privilege level to read only for the invited viewer (pendingEditor)', function (ctx) {
-          expect(
-            ctx.TokenAccessHandler.promises.removeReadAndWriteUserFromProject
-          ).to.have.been.calledWith(ctx.user._id, ctx.project._id.toString())
-          expect(
-            ctx.CollaboratorsHandler.promises.addUserIdToProject
-          ).to.have.been.calledWith(
-            ctx.project._id.toString(),
-            undefined,
-            ctx.user._id,
-            PrivilegeLevels.READ_ONLY,
-            { pendingEditor: true }
-          )
-          expect(ctx.res.sendStatus).toHaveBeenCalledWith(204)
-        })
-      })
-    })
   })
 
   describe('moveReadWriteToReadOnly', function () {

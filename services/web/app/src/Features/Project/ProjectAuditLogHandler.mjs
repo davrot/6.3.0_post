@@ -1,7 +1,6 @@
 import logger from '@overleaf/logger'
 import { ProjectAuditLogEntry } from '../../models/ProjectAuditLogEntry.mjs'
 import { callbackify } from '@overleaf/promise-utils'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
 import _ from 'lodash'
 
 const MANAGED_GROUP_PROJECT_EVENTS = [
@@ -41,11 +40,8 @@ async function findManagedSubscriptions(entry) {
     ])
   )
 
-  const managedSubscriptions = await Promise.all(
-    userIds.map(id =>
-      SubscriptionLocator.promises.getUniqueManagedSubscriptionMemberOf(id)
-    )
-  )
+  // OlliTeX fork (free-only): no SaaS managed group subscriptions.
+  const managedSubscriptions = []
   const ids = managedSubscriptions.map(subscription =>
     subscription?._id.toString()
   )

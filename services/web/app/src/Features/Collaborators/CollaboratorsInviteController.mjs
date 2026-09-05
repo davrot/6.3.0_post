@@ -1,5 +1,4 @@
 import ProjectGetter from '../Project/ProjectGetter.mjs'
-import LimitationsManager from '../Subscription/LimitationsManager.mjs'
 import UserGetter from '../User/UserGetter.mjs'
 import CollaboratorsGetter from './CollaboratorsGetter.mjs'
 import CollaboratorsInviteHandler from './CollaboratorsInviteHandler.mjs'
@@ -22,8 +21,6 @@ import PrivilegeLevels, {
   isPrivilegeUpgrade,
 } from '../Authorization/PrivilegeLevels.mjs'
 import SplitTestHandler from '../SplitTests/SplitTestHandler.mjs'
-import SubscriptionGroupHandler from '../Subscription/SubscriptionGroupHandler.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
 import TokenAccessHandler from '../TokenAccess/TokenAccessHandler.mjs'
 
 // This rate limiter allows a different number of requests depending on the
@@ -70,19 +67,9 @@ async function _checkShouldInviteEmail(email) {
 }
 
 async function _checkRateLimit(userId) {
-  let collabLimit =
-    await LimitationsManager.promises.allowedNumberOfCollaboratorsForUser(
-      userId
-    )
-
-  if (collabLimit == null || collabLimit === 0) {
-    collabLimit = 1
-  } else if (collabLimit < 0 || collabLimit > 20) {
-    collabLimit = 20
-  }
-
-  // Consume enough points to hit the rate limit at 10 * collabLimit
-  const maxRequests = 10 * collabLimit
+  // OlliTeX fork (free-only): SaaS per-plan collaborator limits removed —
+  // the invite rate limiter still applies at the base rate.
+  const maxRequests = 10
   const points = Math.floor(RATE_LIMIT_POINTS / maxRequests)
   try {
     await rateLimiter.consume(userId, points, { method: 'userId' })
@@ -145,24 +132,7 @@ async function inviteToProject(req, res) {
 
   logger.debug({ projectId, email, sendingUserId }, 'inviting to project')
 
-  let allowed = false
-  // can always invite read-only collaborators
-  if (privileges === PrivilegeLevels.READ_ONLY) {
-    allowed = true
-  } else {
-    allowed = await LimitationsManager.promises.canAddXEditCollaborators(
-      projectId,
-      1
-    )
-  }
-
-  if (!allowed) {
-    logger.debug(
-      { projectId, email, sendingUserId },
-      'not allowed to invite more users to project'
-    )
-    return res.json({ invite: null })
-  }
+  // OlliTeX fork (free-only): no SaaS edit-collaborator seat limits.
 
   email = EmailHelper.parseEmail(email, true)
   if (email == null || email === '') {
@@ -496,18 +466,8 @@ async function acceptInvite(req, res) {
     throw new Errors.NotFoundError('no matching invite found')
   }
 
-  if (invite.subscriptionId) {
-    const isGroupMember =
-      await SubscriptionGroupHandler.promises.isUserPartOfGroup(
-        currentUser._id,
-        invite.subscriptionId
-      )
-    if (!isGroupMember) {
-      throw new Errors.ForbiddenError(
-        'user is not part of subscription group required to accept invite'
-      )
-    }
-  }
+  // OlliTeX fork (free-only): SaaS group-subscription invite membership
+  // checks removed (CE invites carry no subscriptionId).
 
   // check if the user is already a member of the project and upgrade privileges if possible
   if (currentUser) {
@@ -676,24 +636,8 @@ async function updateSharingLink(req, res) {
 
   const currentUser = SessionManager.getSessionUser(req.session)
 
-  if (subscriptionId) {
-    const subscriptions =
-      await SubscriptionLocator.promises.getUserActiveProfessionalGroupSubscriptions(
-        currentUser._id,
-        { _id: 1 }
-      )
-    const canShareWithSubscription = subscriptions.some(
-      subscription => subscription._id.toString() === subscriptionId.toString()
-    )
-
-    if (!canShareWithSubscription) {
-      logger.debug(
-        { projectId, subscriptionId, userId: currentUser._id },
-        'cannot create a group sharing link for a non-professional or non-member subscription'
-      )
-      return res.status(403).json({ errorReason: 'subscription_not_eligible' })
-    }
-  }
+  // OlliTeX fork (free-only): SaaS group sharing links removed
+  // (subscriptionId is not a CE concept).
 
   let invite =
     await CollaboratorsInviteGetter.promises.getSharingLinkInvite(projectId)
@@ -832,24 +776,9 @@ async function validateSharingLink(req, res) {
     return res.json({ valid: false })
   }
 
-  if (invite.subscriptionId) {
-    const isGroupMember =
-      await SubscriptionGroupHandler.promises.isUserPartOfGroup(
-        currentUser._id,
-        invite.subscriptionId
-      )
-    if (!isGroupMember) {
-      logger.debug(
-        {
-          projectId,
-          userId: currentUser._id,
-          subscriptionId: invite.subscriptionId,
-        },
-        'user is not part of subscription group required to use sharing link'
-      )
-      return res.json({ valid: false })
-    }
-  }
+  // OlliTeX fork (free-only): SaaS group-subscription sharing-link checks
+  // removed (CE sharing links carry no subscriptionId).
+
   return res.json({ valid: true, projectName: project.name })
 }
 

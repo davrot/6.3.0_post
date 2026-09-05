@@ -21,7 +21,6 @@ import AdminAuthorizationHelper from '../Helpers/AdminAuthorizationHelper.mjs'
 import UrlHelper from '../Helpers/UrlHelper.mjs'
 import UserGetter from '../User/UserGetter.mjs'
 import Settings from '@overleaf/settings'
-import LimitationsManager from '../Subscription/LimitationsManager.mjs'
 import SplitTestHandler from '../SplitTests/SplitTestHandler.mjs'
 import { z, zz, parseReq } from '../../infrastructure/Validation.mjs'
 
@@ -359,11 +358,10 @@ async function grantTokenAccessReadAndWrite(req, res, next) {
       })
     }
 
-    const pendingEditor =
-      !(await LimitationsManager.promises.canAcceptEditCollaboratorInvite(
-        project._id
-      ))
-    await ProjectAuditLogHandler.promises.addEntry(
+      // OlliTeX fork (free-only): no SaaS seat limits — link-shared invites
+      // always grant the full edit privilege (never demoted to pending editor).
+      const pendingEditor = false
+      await ProjectAuditLogHandler.promises.addEntry(
       project._id,
       'accept-via-link-sharing',
       userId,
@@ -587,10 +585,8 @@ async function moveReadWriteToCollaborators(req, res, next) {
       userId,
       projectId
     )
-  const pendingEditor =
-    !(await LimitationsManager.promises.canAcceptEditCollaboratorInvite(
-      project._id
-    ))
+  // OlliTeX fork (free-only): no SaaS seat limits.
+  const pendingEditor = false
   await ProjectAuditLogHandler.promises.addEntry(
     projectId,
     'accept-via-link-sharing',

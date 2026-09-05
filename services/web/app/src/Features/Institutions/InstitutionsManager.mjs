@@ -4,12 +4,9 @@ import Settings from '@overleaf/settings'
 import logger from '@overleaf/logger'
 import { fetchJson } from '@overleaf/fetch-utils'
 import InstitutionsAPI from './InstitutionsAPI.mjs'
-import FeaturesUpdater from '../Subscription/FeaturesUpdater.mjs'
-import FeaturesHelper from '../Subscription/FeaturesHelper.mjs'
 import UserGetter from '../User/UserGetter.mjs'
 import NotificationsBuilder from '../Notifications/NotificationsBuilder.mjs'
 import NotificationsHandler from '../Notifications/NotificationsHandler.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
 import { Institution } from '../../models/Institution.mjs'
 import { Subscription } from '../../models/Subscription.mjs'
 import OError from '@overleaf/o-error'
@@ -51,26 +48,12 @@ async function _getSsoUsers(institutionId, lapsedUserIds) {
 }
 
 async function _checkUsersFeatures(userIds) {
-  const users = await UserGetter.promises.getUsers(userIds, { features: 1 })
-  const result = {
+  // OlliTeX fork (free-only): no SaaS pro/plan tiers — every user is counted
+  // as a plain (non-pro) member.
+  return {
     proUserIds: [],
-    nonProUserIds: [],
+    nonProUserIds: userIds,
   }
-
-  users.forEach(user => {
-    const hasProFeaturesOrBetter = FeaturesHelper.isFeatureSetBetter(
-      user.features,
-      Settings.features.professional
-    )
-
-    if (hasProFeaturesOrBetter) {
-      result.proUserIds.push(user._id)
-    } else {
-      result.nonProUserIds.push(user._id)
-    }
-  })
-
-  return result
 }
 
 const InstitutionsManager = {
@@ -287,27 +270,22 @@ const fetchInstitutionAndAffiliations = async institutionId => {
 }
 
 async function refreshFeatures(affiliation) {
-  const userId = new ObjectId(affiliation.user_id)
-  return await FeaturesUpdater.promises.refreshFeatures(
-    userId,
-    'refresh-institution-users'
-  )
+  // OlliTeX fork (free-only): user features are static (no SaaS feature
+  // refresh) — nothing changed.
+  return { featuresChanged: false }
 }
 
 async function refreshFeaturesAndNotify(affiliation) {
   const userId = new ObjectId(affiliation.user_id)
-  const { featuresChanged } = await FeaturesUpdater.promises.refreshFeatures(
-    userId,
-    'refresh-institution-users'
-  )
+  const { featuresChanged } = await refreshFeatures(affiliation)
   const { user, subscription } = await getUserInfo(userId)
   return await notifyUser(user, affiliation, subscription, featuresChanged)
 }
 
 const getUserInfo = async userId => {
   const user = await UserGetter.promises.getUser(userId, { _id: 1 })
-  const subscription =
-    await SubscriptionLocator.promises.getUsersSubscription(user)
+  // OlliTeX fork (free-only): no SaaS subscriptions.
+  const subscription = undefined
   return { user, subscription }
 }
 
@@ -348,10 +326,8 @@ async function affiliateUserByReversedHostname(user, reversedHostname) {
     }
   }
 
-  await FeaturesUpdater.promises.refreshFeatures(
-    user._id,
-    'affiliate-user-by-reversed-hostname'
-  )
+  // OlliTeX fork (free-only): SaaS feature refresh removed (features are
+  // static on this fork).
 }
 
 export default {

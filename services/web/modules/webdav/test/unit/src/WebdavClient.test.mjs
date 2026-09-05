@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@overleaf/settings', () => ({
@@ -131,8 +132,7 @@ describe('WebdavClient', () => {
       Object.assign(new Error('not found'), { status: 404 })
     )
 
-    await expect(
-      client.remove('/Overleaf/demo/gone.tex')
-    ).resolves.toBe(404)
+    const code = await client.remove('/Overleaf/demo/gone.tex')
+    expect(code).toBe(404)
   })
 })

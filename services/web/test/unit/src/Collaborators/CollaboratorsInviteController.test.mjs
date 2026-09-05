@@ -387,13 +387,9 @@ describe('CollaboratorsInviteController', function () {
         })
       })
 
-      it('should have called canAddXEditCollaborators', function (ctx) {
-        ctx.LimitationsManager.promises.canAddXEditCollaborators.callCount.should.equal(
-          1
-        )
+      it('should not enforce a collaborator seat limit (free fork)', function (ctx) {
         ctx.LimitationsManager.promises.canAddXEditCollaborators
-          .calledWith(ctx.projectId)
-          .should.equal(true)
+          .callCount.should.equal(0)
       })
 
       it('should have called _checkShouldInviteEmail', function (ctx) {
@@ -441,147 +437,6 @@ describe('CollaboratorsInviteController', function () {
       })
     })
 
-    describe('when the user is not allowed to add more edit collaborators', function () {
-      beforeEach(function (ctx) {
-        ctx.LimitationsManager.promises.canAddXEditCollaborators.resolves(false)
-      })
-
-      describe('readAndWrite collaborator', function () {
-        beforeEach(async function (ctx) {
-          await new Promise(resolve => {
-            ctx.privileges = 'readAndWrite'
-            ctx.role = 'Editor'
-            ctx.CollaboratorsInviteController._checkShouldInviteEmail = sinon
-              .stub()
-              .resolves(true)
-            ctx.CollaboratorsInviteController._checkRateLimit = sinon
-              .stub()
-              .resolves(true)
-            ctx.res.callback = () => resolve()
-            ctx.CollaboratorsInviteController.inviteToProject(
-              ctx.req,
-              ctx.res,
-              ctx.next
-            )
-          })
-        })
-
-        it('should produce json response without an invite', function (ctx) {
-          expect(ctx.res.json).toHaveBeenCalledTimes(1)
-          expect(ctx.res.json.mock.calls[0][0]).to.deep.equal({
-            invite: null,
-          })
-        })
-
-        it('should not have called _checkShouldInviteEmail', function (ctx) {
-          ctx.CollaboratorsInviteController._checkShouldInviteEmail.callCount.should.equal(
-            0
-          )
-          ctx.CollaboratorsInviteController._checkShouldInviteEmail
-            .calledWith(ctx.currentUser, ctx.targetEmail)
-            .should.equal(false)
-        })
-
-        it('should not have called inviteToProject', function (ctx) {
-          ctx.CollaboratorsInviteHandler.promises.inviteToProject.callCount.should.equal(
-            0
-          )
-        })
-      })
-
-      describe('readOnly collaborator (always allowed)', function () {
-        beforeEach(async function (ctx) {
-          ctx.privileges = 'readOnly'
-          ctx.role = 'Viewer'
-          // Update the invite data to reflect the new privileges
-          ctx.invite.privileges = ctx.privileges
-          ctx.inviteReducedData = _.pick(ctx.invite, [
-            '_id',
-            'email',
-            'privileges',
-          ])
-          ctx.CollaboratorsInviteHandler.promises.inviteToProject.resolves(
-            ctx.inviteReducedData
-          )
-
-          await new Promise(resolve => {
-            ctx.req.body = {
-              email: ctx.targetEmail,
-              privileges: ctx.privileges,
-            }
-            ctx.CollaboratorsInviteController._checkShouldInviteEmail = sinon
-              .stub()
-              .resolves(true)
-            ctx.CollaboratorsInviteController._checkRateLimit = sinon
-              .stub()
-              .resolves(true)
-            ctx.res.callback = () => resolve()
-            ctx.CollaboratorsInviteController.inviteToProject(
-              ctx.req,
-              ctx.res,
-              ctx.next
-            )
-          })
-        })
-
-        it('should produce json response', function (ctx) {
-          expect(ctx.res.json).toHaveBeenCalledTimes(1)
-          expect(ctx.res.json.mock.calls[0][0]).to.deep.equal({
-            invite: ctx.inviteReducedData,
-          })
-        })
-
-        it('should not have called canAddXEditCollaborators', function (ctx) {
-          ctx.LimitationsManager.promises.canAddXEditCollaborators.callCount.should.equal(
-            0
-          )
-        })
-
-        it('should have called _checkShouldInviteEmail', function (ctx) {
-          ctx.CollaboratorsInviteController._checkShouldInviteEmail.callCount.should.equal(
-            1
-          )
-          ctx.CollaboratorsInviteController._checkShouldInviteEmail
-            .calledWith(ctx.targetEmail)
-            .should.equal(true)
-        })
-
-        it('should have called inviteToProject', function (ctx) {
-          ctx.CollaboratorsInviteHandler.promises.inviteToProject.callCount.should.equal(
-            1
-          )
-          ctx.CollaboratorsInviteHandler.promises.inviteToProject
-            .calledWith(
-              ctx.projectId,
-              ctx.currentUser,
-              ctx.targetEmail,
-              ctx.privileges
-            )
-            .should.equal(true)
-        })
-
-        it('should have called emitToRoom', function (ctx) {
-          ctx.EditorRealTimeController.emitToRoom.callCount.should.equal(1)
-          ctx.EditorRealTimeController.emitToRoom
-            .calledWith(ctx.projectId, 'project:membership:changed')
-            .should.equal(true)
-        })
-
-        it('adds a project audit log entry', function (ctx) {
-          ctx.ProjectAuditLogHandler.addEntryInBackground.should.have.been.calledWith(
-            ctx.projectId,
-            'send-invite',
-            ctx.currentUser._id,
-            ctx.req.ip,
-            {
-              inviteId: ctx.invite._id,
-              role: ctx.role,
-            }
-          )
-        })
-      })
-    })
-
     describe('when inviteToProject produces an error', function () {
       beforeEach(async function (ctx) {
         await new Promise(resolve => {
@@ -608,13 +463,9 @@ describe('CollaboratorsInviteController', function () {
         expect(ctx.next).to.have.been.calledWith(sinon.match.instanceOf(Error))
       })
 
-      it('should have called canAddXEditCollaborators', function (ctx) {
-        ctx.LimitationsManager.promises.canAddXEditCollaborators.callCount.should.equal(
-          1
-        )
+      it('should not enforce a collaborator seat limit (free fork)', function (ctx) {
         ctx.LimitationsManager.promises.canAddXEditCollaborators
-          .calledWith(ctx.projectId)
-          .should.equal(true)
+          .callCount.should.equal(0)
       })
 
       it('should have called _checkShouldInviteEmail', function (ctx) {
@@ -957,10 +808,10 @@ describe('CollaboratorsInviteController', function () {
         ).to.have.been.calledWith(ctx.req)
       })
 
-      it('should redirect to the register page', function (ctx) {
+      it('should redirect to the login page', function (ctx) {
         expect(ctx.res.render).not.toHaveBeenCalled()
         expect(ctx.res.redirect).toHaveBeenCalledTimes(1)
-        expect(ctx.res.redirect).toHaveBeenCalledWith('/register')
+        expect(ctx.res.redirect).toHaveBeenCalledWith('/login')
       })
     })
 
@@ -1941,52 +1792,6 @@ describe('CollaboratorsInviteController', function () {
       expect(ctx.res.json).toHaveBeenCalledTimes(1)
     })
 
-    describe('with a subscriptionId', function () {
-      beforeEach(function (ctx) {
-        ctx.subscriptionId = new ObjectId()
-        ctx.req.body.subscriptionId = ctx.subscriptionId.toString()
-      })
-
-      it('creates the invite when the user is in a matching professional group subscription', async function (ctx) {
-        await new Promise(resolve => {
-          ctx.SubscriptionLocator.promises.getUserActiveProfessionalGroupSubscriptions.resolves(
-            [{ _id: ctx.subscriptionId }]
-          )
-          ctx.CollaboratorsInviteGetter.promises.getSharingLinkInvite.resolves(
-            null
-          )
-          ctx.CollaboratorsInviteHandler.promises.createSharingLinkInvite.resolves(
-            ctx.invite
-          )
-          ctx.res.callback = () => resolve()
-          ctx.CollaboratorsInviteController.updateSharingLink(ctx.req, ctx.res)
-        })
-
-        ctx.CollaboratorsInviteHandler.promises.createSharingLinkInvite.should.have.been.calledWith(
-          ctx.projectId,
-          'readOnly',
-          ctx.subscriptionId.toString()
-        )
-      })
-
-      it('responds with a 403 JSON error when the subscription is not a professional group the user belongs to', async function (ctx) {
-        await new Promise(resolve => {
-          ctx.SubscriptionLocator.promises.getUserActiveProfessionalGroupSubscriptions.resolves(
-            []
-          )
-          ctx.res.callback = () => resolve()
-          ctx.CollaboratorsInviteController.updateSharingLink(ctx.req, ctx.res)
-        })
-
-        expect(ctx.res.statusCode).to.equal(403)
-        expect(ctx.res.json).toHaveBeenCalledWith({
-          errorReason: 'subscription_not_eligible',
-        })
-        ctx.CollaboratorsInviteHandler.promises.createSharingLinkInvite.called.should.equal(
-          false
-        )
-      })
-    })
   })
 
   describe('viewSharingLink', function () {
@@ -2020,7 +1825,7 @@ describe('CollaboratorsInviteController', function () {
         expect(ctx.res.renderedTemplate).to.equal('project/invite/show')
       })
 
-      it('redirects to register for a group-restricted sharing link', async function (ctx) {
+      it('redirects to login for a group-restricted sharing link', async function (ctx) {
         ctx.CollaboratorsInviteGetter.promises.getSharingLinkInvite.resolves({
           privileges: 'readOnly',
           subscriptionId: new ObjectId().toString(),
@@ -2029,10 +1834,10 @@ describe('CollaboratorsInviteController', function () {
           ctx.res.callback = () => resolve()
           ctx.CollaboratorsInviteController.viewSharingLink(ctx.req, ctx.res)
         })
-        expect(ctx.res.redirectedTo).to.equal('/register')
+        expect(ctx.res.redirectedTo).to.equal('/login')
       })
 
-      it('redirects to register when there is no sharing link', async function (ctx) {
+      it('redirects to login when there is no sharing link', async function (ctx) {
         ctx.CollaboratorsInviteGetter.promises.getSharingLinkInvite.resolves(
           null
         )
@@ -2040,7 +1845,7 @@ describe('CollaboratorsInviteController', function () {
           ctx.res.callback = () => resolve()
           ctx.CollaboratorsInviteController.viewSharingLink(ctx.req, ctx.res)
         })
-        expect(ctx.res.redirectedTo).to.equal('/register')
+        expect(ctx.res.redirectedTo).to.equal('/login')
       })
     })
   })
@@ -2073,18 +1878,6 @@ describe('CollaboratorsInviteController', function () {
       })
     })
 
-    it('returns valid false when subscription group check fails', async function (ctx) {
-      await new Promise(resolve => {
-        ctx.invite.subscriptionId = new ObjectId().toString()
-        ctx.SubscriptionGroupHandler.promises.isUserPartOfGroup.resolves(false)
-        ctx.CollaboratorsInviteGetter.promises.getInviteByToken.resolves(
-          ctx.invite
-        )
-        ctx.res.callback = () => resolve()
-        ctx.CollaboratorsInviteController.validateSharingLink(ctx.req, ctx.res)
-      })
-      expect(ctx.res.json).toHaveBeenCalledWith({ valid: false })
-    })
 
     describe('for a logged-out (anonymous) user', function () {
       beforeEach(function (ctx) {
@@ -2247,24 +2040,14 @@ describe('CollaboratorsInviteController', function () {
       result.should.equal(false)
     })
 
-    it('should allow 10x the collaborators', async function (ctx) {
+    it('should consume a fixed base rate (free fork: no per-collaborator scaling)', async function (ctx) {
       await ctx.CollaboratorsInviteController._checkRateLimit(ctx.currentUserId)
       expect(ctx.rateLimiter.consume).to.have.been.calledWith(
         ctx.currentUserId,
-        Math.floor(40000 / 170)
+        Math.floor(40000 / 10)
       )
     })
 
-    it('should allow 200 requests when collaborators is -1', async function (ctx) {
-      ctx.LimitationsManager.promises.allowedNumberOfCollaboratorsForUser
-        .withArgs(ctx.currentUserId)
-        .resolves(-1)
-      await ctx.CollaboratorsInviteController._checkRateLimit(ctx.currentUserId)
-      expect(ctx.rateLimiter.consume).to.have.been.calledWith(
-        ctx.currentUserId,
-        Math.floor(40000 / 200)
-      )
-    })
 
     it('should allow 10 requests when user has no collaborators set', async function (ctx) {
       ctx.LimitationsManager.promises.allowedNumberOfCollaboratorsForUser

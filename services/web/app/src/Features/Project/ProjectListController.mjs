@@ -10,12 +10,10 @@ import PrivilegeLevels from '../Authorization/PrivilegeLevels.mjs'
 import SessionManager from '../Authentication/SessionManager.mjs'
 import Sources from '../Authorization/Sources.mjs'
 import UserGetter from '../User/UserGetter.mjs'
-import SurveyHandler from '../Survey/SurveyHandler.mjs'
 import TagsHandler from '../Tags/TagsHandler.mjs'
 import { expressify } from '@overleaf/promise-utils'
 import logger from '@overleaf/logger'
 import Features from '../../infrastructure/Features.mjs'
-import SubscriptionViewModelBuilder from '../Subscription/SubscriptionViewModelBuilder.mjs'
 import NotificationsHandler from '../Notifications/NotificationsHandler.mjs'
 import Modules from '../../infrastructure/Modules.mjs'
 import { OError, V1ConnectionError } from '../Errors/Errors.js'
@@ -27,8 +25,6 @@ import GeoIpLookup from '../../infrastructure/GeoIpLookup.mjs'
 import SplitTestHandler from '../SplitTests/SplitTestHandler.mjs'
 import SplitTestSessionHandler from '../SplitTests/SplitTestSessionHandler.mjs'
 import TutorialHandler from '../Tutorial/TutorialHandler.mjs'
-import SubscriptionHelper from '../Subscription/SubscriptionHelper.mjs'
-import CustomerIoPlanHelpers from '../Subscription/CustomerIoPlanHelpers.mjs'
 import PermissionsManager from '../Authorization/PermissionsManager.mjs'
 import AnalyticsManager from '../Analytics/AnalyticsManager.mjs'
 import { OnboardingDataCollection } from '../../models/OnboardingDataCollection.mjs'
@@ -171,36 +167,7 @@ async function projectListPage(req, res, next) {
 
   const userId = SessionManager.getLoggedInUserId(req.session)
 
-  if (isSaas) {
-    const { variant: domainCaptureRedirect } =
-      await SplitTestHandler.promises.getAssignment(
-        req,
-        res,
-        'domain-capture-redirect'
-      )
-
-    if (domainCaptureRedirect === 'enabled') {
-      const groupsWithEmails = (
-        await Modules.promises.hooks.fire(
-          'findDomainCaptureGroupsUserCouldBePartOf',
-          userId
-        )
-      )?.[0]
-
-      if (groupsWithEmails && groupsWithEmails.length > 0) {
-        if (
-          groupsWithEmails.some(
-            (/** @type {any} */ { subscription }) =>
-              subscription.managedUsersEnabled
-          )
-        ) {
-          return res.redirect('/domain-capture')
-        } else {
-          // TODO show notification or anything else
-        }
-      }
-    }
-  }
+  // OlliTeX fork (free-only): SaaS domain-capture redirect removed.
 
   const projectsBlobPending = _getProjects(userId).catch(err => {
     logger.err({ err, userId }, 'projects listing in background failed')
@@ -243,39 +210,9 @@ async function projectListPage(req, res, next) {
 
     await SplitTestSessionHandler.promises.sessionMaintenance(req, user)
 
-    try {
-      ;({
-        bestSubscription: usersBestSubscription,
-        individualSubscription: usersIndividualSubscription,
-        memberGroupSubscriptions: usersGroupSubscriptions,
-        managedGroupSubscriptions: usersManagedGroupSubscriptions,
-      } = await SubscriptionViewModelBuilder.promises.getUsersSubscriptionDetails(
-        { _id: userId }
-      ))
-    } catch (error) {
-      logger.err(
-        { err: error, userId },
-        "Failed to get user's best subscription"
-      )
-    }
-
-    userIsMemberOfGroupSubscription =
-      usersGroupSubscriptions.length > 0 ||
-      usersManagedGroupSubscriptions.length > 0
-
-    // TODO use helper function
-    if (!user.enrollment?.managedBy) {
-      groupSubscriptionsPendingEnrollment = usersGroupSubscriptions.filter(
-        subscription =>
-          subscription.groupPlan && subscription.managedUsersEnabled
-      )
-    }
-
-    try {
-      survey = await SurveyHandler.promises.getSurvey(userId)
-    } catch (error) {
-      logger.err({ err: error, userId }, 'Failed to load the active survey')
-    }
+    // OlliTeX fork (free-only): SaaS subscription details, group-subscription
+    // flags and SaaS survey removed — the declared variables above keep their
+    // neutral defaults (undefined / [] / false).
 
     if (
       user &&
@@ -555,16 +492,8 @@ async function projectListPage(req, res, next) {
     }
   }
 
-  let hasIndividualPaidSubscription = false
-
-  try {
-    hasIndividualPaidSubscription =
-      SubscriptionHelper.isIndividualActivePaidSubscription(
-        usersIndividualSubscription
-      )
-  } catch (error) {
-    logger.error({ err: error }, 'Failed to get individual subscription')
-  }
+  // OlliTeX fork (free-only): no individual paid subscriptions (SaaS removed).
+  const hasIndividualPaidSubscription = false
 
   const aiBlocked =
     Features.hasFeature('saas') && !(await _canUseAIAssist(user))
@@ -644,7 +573,6 @@ async function projectListPage(req, res, next) {
       ...(usedLatex && { used_latex: usedLatex }),
       ...(countryCode && { country: countryCode }),
       ...(commonsInstitution && { commons_institution: commonsInstitution }),
-      ...CustomerIoPlanHelpers.getAffiliationProperties(userEmails),
       ...(groupRole && { group_role: groupRole }),
       is_managed_user: Boolean(user.enrollment?.managedBy),
       ...(user.email && { email: user.email }),

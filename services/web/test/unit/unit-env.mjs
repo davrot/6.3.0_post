@@ -14,13 +14,13 @@
  * exists before anything else in the worker evaluates.
  */
 if (!process.env.MONGO_URL) {
-  process.env.MONGO_URL = 'mongodb://127.0.0.1:27017/overleaf-unit-test'
+  process.env.MONGO_URL = 'mongodb://127.0.0.1:27017/test-overleaf'
 }
 // MONGO_HOST/MONGO_DATABASE are part of the overleaf server environment
 // (they can point at the LIVE database) and are a fallback the settings
 // layer consults when MONGO_URL is absent; neutralize them for unit tests.
 process.env.MONGO_HOST = process.env.MONGO_HOST || '127.0.0.1'
-process.env.MONGO_DATABASE = process.env.MONGO_DATABASE || 'overleaf-unit-test'
+process.env.MONGO_DATABASE = process.env.MONGO_DATABASE || 'test-overleaf'
 if (!process.env.NODE_APP_INSTANCE) {
   process.env.NODE_APP_INSTANCE = String(
     Math.floor(Math.random() * 100000)

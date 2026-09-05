@@ -4,7 +4,6 @@ import Errors from '../Errors/Errors.js'
 import InstitutionsAPI from '../Institutions/InstitutionsAPI.mjs'
 import NotificationsBuilder from '../Notifications/NotificationsBuilder.mjs'
 import OError from '@overleaf/o-error'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
 import UserAuditLogHandler from '../User/UserAuditLogHandler.mjs'
 import UserGetter from '../User/UserGetter.mjs'
 import UserUpdater from '../User/UserUpdater.mjs'
@@ -224,23 +223,6 @@ async function getUser(providerId, externalUserId, userIdAttribute) {
   }).exec()
 
   return user
-}
-
-async function redundantSubscription(userId, providerId, providerName) {
-  const subscription =
-    await SubscriptionLocator.promises.getUserIndividualSubscription(userId)
-
-  if (subscription && !subscription.groupPlan) {
-    await NotificationsBuilder.promises
-      .redundantPersonalSubscription(
-        {
-          institutionId: providerId,
-          institutionName: providerName,
-        },
-        { _id: userId }
-      )
-      .create()
-  }
 }
 
 async function linkAccounts(userId, samlData, auditLog) {
@@ -476,7 +458,6 @@ const SAMLIdentityManager = {
   getUser,
   linkAccounts,
   migrateIdentifier,
-  redundantSubscription,
   unlinkAccounts,
   unlinkNotMigrated,
   updateEntitlement,

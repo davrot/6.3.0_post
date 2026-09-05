@@ -13,7 +13,6 @@ import * as eventTracking from '../../../../infrastructure/event-tracking'
 import { ToolbarLogos } from './logos'
 import { useEditorContext } from '@/shared/context/editor-context'
 import importOverleafModules from '../../../../../macros/import-overleaf-module.macro'
-import UpgradeButton from './upgrade-button'
 import getMeta from '@/utils/meta'
 import { useIdeReactContext } from '@/features/ide-react/context/ide-react-context'
 import { useFeatureFlag } from '@/shared/context/split-test-context'
@@ -30,7 +29,6 @@ export const Toolbar = () => {
     useLayoutContext()
   const { cobranding, isRestrictedTokenMember } = useEditorContext()
   const { permissionsLevel } = useIdeReactContext()
-  const showUpgradePrompt = getMeta('ol-showUpgradePrompt')
   const improvedFlakyConnections = useFeatureFlag(
     'intermittent-connection-improvements'
   )
@@ -128,7 +126,6 @@ export const Toolbar = () => {
       <div className="ide-redesign-toolbar-menu">
         <ToolbarLogos cobranding={cobranding} />
         <ToolbarMenuBar />
-        {showUpgradePrompt && <UpgradeButton />}
       </div>
       <ToolbarProjectTitle />
       <div className="ide-redesign-toolbar-actions-wrapper">

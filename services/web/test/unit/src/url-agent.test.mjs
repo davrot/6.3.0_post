@@ -1,6 +1,5 @@
-/* global describe, it, beforeAll, afterAll */
 import http from 'node:http'
-import { expect } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import UrlAgentModule from '../../../app/src/Features/LinkedFiles/UrlAgent.mjs'
 
 /**

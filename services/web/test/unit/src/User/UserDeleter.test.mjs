@@ -264,23 +264,7 @@ describe('UserDeleter', function () {
             ).to.have.been.calledWith(ctx.userId)
           })
 
-          it("should cancel the user's subscription", async function (ctx) {
-            await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
-              ipAddress: ctx.ipAddress,
-            })
-            expect(
-              ctx.SubscriptionHandler.promises.cancelSubscription
-            ).to.have.been.calledWith(ctx.user)
-          })
 
-          it('should delete user affiliations', async function (ctx) {
-            await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
-              ipAddress: ctx.ipAddress,
-            })
-            expect(
-              ctx.InstitutionsApi.promises.deleteAffiliations
-            ).to.have.been.calledWith(ctx.userId)
-          })
 
           it('should cleanup collabratec access tokens', async function (ctx) {
             await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
@@ -312,31 +296,8 @@ describe('UserDeleter', function () {
             ).to.have.been.calledWith(ctx.user)
           })
 
-          it('should remove user from group subscriptions', async function (ctx) {
-            await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
-              ipAddress: ctx.ipAddress,
-            })
-            expect(
-              ctx.SubscriptionUpdater.promises.removeUserFromAllGroups
-            ).to.have.been.calledWith(ctx.userId)
-          })
 
-          it('should remove user memberships', async function (ctx) {
-            await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
-              ipAddress: ctx.ipAddress,
-            })
-            expect(
-              ctx.UserMembershipsHandler.promises.removeUserFromAllEntities
-            ).to.have.been.calledWith(ctx.userId)
-          })
 
-          it('rejects if the user is a subscription admin', async function (ctx) {
-            ctx.SubscriptionLocator.promises.getUsersSubscription.rejects({
-              _id: 'some-subscription',
-            })
-            await expect(ctx.UserDeleter.promises.deleteUser(ctx.userId, {})).to
-              .be.rejected
-          })
 
           it('should create a deletedUser', async function (ctx) {
             await ctx.UserDeleter.promises.deleteUser(ctx.userId, {
@@ -564,74 +525,8 @@ describe('UserDeleter', function () {
       })
     })
 
-    describe('when the user cannot be deleted because they are a subscription admin', function () {
-      beforeEach(function (ctx) {
-        ctx.SubscriptionLocator.promises.getUsersSubscription.resolves({
-          _id: 'some-subscription',
-        })
-      })
-
-      it('fails with a SubscriptionAdminDeletionError', async function (ctx) {
-        await expect(
-          ctx.UserDeleter.promises.deleteUser(ctx.userId)
-        ).to.be.rejectedWith(Errors.SubscriptionAdminDeletionError)
-      })
-
-      it('should not create a deletedUser', async function (ctx) {
-        await expect(ctx.UserDeleter.promises.deleteUser(ctx.userId)).to.be
-          .rejected
-        ctx.DeletedUserMock.verify()
-      })
-
-      it('should not remove the user from mongo', async function (ctx) {
-        await expect(ctx.UserDeleter.promises.deleteUser(ctx.userId)).to.be
-          .rejected
-        ctx.UserMock.verify()
-      })
-    })
   })
 
-  describe('ensureCanDeleteUser', function () {
-    it('should not return error when user can be deleted', async function (ctx) {
-      ctx.SubscriptionLocator.promises.getUsersSubscription.resolves(null)
-      let error
-      try {
-        await ctx.UserDeleter.promises.ensureCanDeleteUser(ctx.user)
-      } catch (e) {
-        error = e
-      } finally {
-        expect(error).not.to.exist
-      }
-    })
-
-    it('should return custom error when user is group admin', async function (ctx) {
-      ctx.SubscriptionLocator.promises.getUsersSubscription.resolves({
-        _id: '123abc',
-      })
-      let error
-      try {
-        await ctx.UserDeleter.promises.ensureCanDeleteUser(ctx.user)
-      } catch (e) {
-        error = e
-      } finally {
-        expect(error).to.be.instanceof(Errors.SubscriptionAdminDeletionError)
-      }
-    })
-
-    it('propagates errors', async function (ctx) {
-      ctx.SubscriptionLocator.promises.getUsersSubscription.rejects(
-        new Error('Some error')
-      )
-      let error
-      try {
-        await ctx.UserDeleter.promises.ensureCanDeleteUser(ctx.user)
-      } catch (e) {
-        error = e
-      } finally {
-        expect(error).to.be.instanceof(Error)
-      }
-    })
-  })
 
   describe('expireDeletedUsersAfterDuration', function () {
     const userId1 = new ObjectId()

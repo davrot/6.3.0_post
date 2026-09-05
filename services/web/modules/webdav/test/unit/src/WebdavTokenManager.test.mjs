@@ -61,9 +61,13 @@ describe('WebdavTokenManager', () => {
   it('rejects for a user without credentials', async () => {
     WebdavUserCredentials.findOne.mockResolvedValue(null)
 
-    await expect(
-      WebdavTokenManager.getUserCredentials('nonexistent-user')
-    ).rejects.toThrow()
+    let thrown = null
+    try {
+      await WebdavTokenManager.getUserCredentials('nonexistent-user')
+    } catch (e) {
+      thrown = e
+    }
+    expect(thrown).not.to.be.null
   })
 
   it('removes credentials by user id', async () => {

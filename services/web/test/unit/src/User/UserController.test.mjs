@@ -806,19 +806,6 @@ describe('UserController', function () {
       })
     })
 
-    it('should call populateTeamInvites', function (ctx) {
-      return new Promise(resolve => {
-        ctx.req.body.email = ctx.newEmail.toUpperCase()
-        ctx.res.sendStatus = code => {
-          code.should.equal(200)
-          ctx.UserHandler.promises.populateTeamInvites.should.have.been.calledWith(
-            ctx.user
-          )
-          resolve()
-        }
-        ctx.UserController.updateUserSettings(ctx.req, ctx.res)
-      })
-    })
 
     describe('when changeEmailAddress yields an error', function () {
       it('should pass on an error and not send a success status', function (ctx) {

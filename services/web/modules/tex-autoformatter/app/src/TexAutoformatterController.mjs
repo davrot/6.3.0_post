@@ -38,6 +38,13 @@ async function formatTex(req, res) {
 
 function runBibtexTidy(input) {
   // bibtex-tidy: https://github.com/FlamingTempura/bibtex-tidy
+  // NOTE: removeDuplicateFields/encodeUrls/tidyComments crash in
+  // bibtex-tidy 1.15.1 under Node 24 (TypeError: …getOrInsert is not a
+  // function — internal Map polyfill mismatch), and omitting them
+  // (undefined) hits the same broken branch — they must be set to
+  // explicit false. The set below is the verified-working option
+  // surface; formatting invariants (sortFields, curly, numeric, align,
+  // trailingCommas, removeEmptyFields) are all preserved.
   const result = tidy(input, {
     curly: true,
     numeric: true,
@@ -47,9 +54,9 @@ function runBibtexTidy(input) {
     stripEnclosingBraces: true,
     trailingCommas: true,
     removeEmptyFields: true,
-    removeDuplicateFields: true,
-    encodeUrls: true,
-    tidyComments: true,
+    removeDuplicateFields: false,
+    encodeUrls: false,
+    tidyComments: false,
   })
   return result.bibtex
 }

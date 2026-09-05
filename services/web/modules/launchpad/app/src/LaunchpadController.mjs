@@ -55,7 +55,10 @@ async function launchpadPage(req, res) {
   if (!sessionUser) {
     if (!adminUserExists) {
       res.render(Path.resolve(import.meta.dirname, '../views/launchpad'), {
-        hideNavLogo: true, // 2026-09 (S1, owner): no navbar brand logo on app pages (child locals don't reach the parent template; pass via render locals)        adminUserExists,
+        // 2026-09 (S1, owner): no navbar brand logo on app pages (child
+        // locals don't reach the parent template; pass via render locals)
+        hideNavLogo: true,
+        adminUserExists,
         authMethod,
       })
     } else {
@@ -68,7 +71,10 @@ async function launchpadPage(req, res) {
     })
     if (hasAdminAccess(user)) {
       res.render(Path.resolve(import.meta.dirname, '../views/launchpad'), {
-        hideNavLogo: true, // 2026-09 (S1, owner): no navbar brand logo on app pages (child locals don't reach the parent template; pass via render locals)        wsUrl: Settings.wsUrl,
+        // 2026-09 (S1, owner): no navbar brand logo on app pages (child
+        // locals don't reach the parent template; pass via render locals)
+        hideNavLogo: true,
+        wsUrl: Settings.wsUrl,
         adminUserExists,
         authMethod,
       })

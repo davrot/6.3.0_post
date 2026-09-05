@@ -526,87 +526,17 @@ describe('UserPagesController', function () {
       })
     })
 
-    it('should send the correct managed user admin email', async function (ctx) {
-      await new Promise((resolve, reject) => {
-        ctx.res.callback = () => {
-          expect(
-            ctx.res.renderedVariables.currentManagedUserAdminEmail
-          ).to.equal(ctx.adminEmail)
-          resolve()
-        }
-        ctx.UserPagesController.settingsPage(
-          ctx.req,
-          ctx.res,
-          ctx.rejectOnError(reject)
-        )
-      })
-    })
 
-    it('should send info for groups with SSO enabled', async function (ctx) {
-      ctx.user.enrollment = {
-        sso: [
-          {
-            groupId: 'abc123abc123',
-            primary: true,
-            linkedAt: new Date(),
-          },
-        ],
-      }
-      const group1 = {
-        _id: 'abc123abc123',
-        teamName: 'Group SSO Rulz',
-        admin_id: {
-          email: 'admin.email@ssolove.com',
-        },
-        linked: true,
-      }
-      const group2 = {
-        _id: 'def456def456',
-        admin_id: {
-          email: 'someone.else@noname.co.uk',
-        },
-        linked: false,
-      }
-
-      ctx.Modules.promises.hooks.fire
-        .withArgs('getUserGroupsSSOEnrollmentStatus')
-        .resolves([[group1, group2]])
-      await new Promise((resolve, reject) => {
-        ctx.res.callback = () => {
-          expect(
-            ctx.res.renderedVariables.memberOfSSOEnabledGroups
-          ).to.deep.equal([
-            {
-              groupId: 'abc123abc123',
-              groupName: 'Group SSO Rulz',
-              adminEmail: 'admin.email@ssolove.com',
-              linked: true,
-            },
-            {
-              groupId: 'def456def456',
-              groupName: undefined,
-              adminEmail: 'someone.else@noname.co.uk',
-              linked: false,
-            },
-          ])
-          resolve()
-        }
-
-        ctx.UserPagesController.settingsPage(
-          ctx.req,
-          ctx.res,
-          ctx.rejectOnError(reject)
-        )
-      })
-    })
 
     describe('when ldap.updateUserDetailsOnLogin is true', function () {
       beforeEach(function (ctx) {
         ctx.settings.ldap = { updateUserDetailsOnLogin: true }
+        ctx.req.user = { externalAuth: 'ldap' }
       })
 
       afterEach(function (ctx) {
         delete ctx.settings.ldap
+        delete ctx.req.user
       })
 
       it('should set "shouldAllowEditingDetails" to false', async function (ctx) {
@@ -629,10 +559,12 @@ describe('UserPagesController', function () {
     describe('when saml.updateUserDetailsOnLogin is true', function () {
       beforeEach(function (ctx) {
         ctx.settings.saml = { updateUserDetailsOnLogin: true }
+        ctx.req.user = { externalAuth: 'saml' }
       })
 
       afterEach(function (ctx) {
         delete ctx.settings.saml
+        delete ctx.req.user
       })
 
       it('should set "shouldAllowEditingDetails" to false', async function (ctx) {

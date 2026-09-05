@@ -14,8 +14,6 @@ type NoProjectsProps = NoProjectsCommonProps & {
 
 function NoProjects({ activeSection, showNewProjectButton }: NoProjectsProps) {
   const { t } = useTranslation()
-  const usersBestSubscription = getMeta('ol-usersBestSubscription')
-  const isGroupPlan = usersBestSubscription?.type === 'group'
 
   return (
     <div className="project-ds-empty-project-list">
@@ -45,17 +43,9 @@ function NoProjects({ activeSection, showNewProjectButton }: NoProjectsProps) {
             {activeSection === 'all' &&
               t('projects_you_own_or_have_access_to_will_appear_here')}
             {activeSection === 'owned' &&
-              (isGroupPlan
-                ? t(
-                    'projects_you_create_across_all_your_workspaces_will_appear_here'
-                  )
-                : t('projects_you_create_will_appear_here'))}
+              t('projects_you_create_will_appear_here')}
             {activeSection === 'shared' &&
-              (isGroupPlan
-                ? t(
-                    'projects_shared_with_you_directly_or_in_shared_workspaces_will_appear_here'
-                  )
-                : t('projects_shared_with_you_directly_will_appear_here'))}
+              t('projects_shared_with_you_directly_will_appear_here')}
             {activeSection === 'archived' &&
               t('projects_you_archive_will_appear_here')}
             {activeSection === 'trashed' && (

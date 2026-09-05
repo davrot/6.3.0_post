@@ -77,14 +77,19 @@ describe('ConflictResolver', () => {
   describe('detectConflict', () => {
     it('throws when the project has no sync state', async () => {
       SyncStateManager.getProjectState.mockResolvedValue(null)
-      await expect(
-        ConflictResolver.detectConflict({
+      let thrown = null
+      try {
+        await ConflictResolver.detectConflict({
           projectId,
           path,
           localHash: 'abc',
           remoteETag: 'etag-1',
         })
-      ).rejects.toThrow('Project not linked to WebDAV')
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).toBeInstanceOf(Error)
+      expect(thrown.message).to.equal('Project not linked to WebDAV')
     })
 
     it('reports an existing conflict when lastConflict matches the path', async () => {
@@ -130,9 +135,14 @@ describe('ConflictResolver', () => {
         lastConflict: null,
       })
 
-      await expect(
-        ConflictResolver.getConflictingVersions(projectId, path)
-      ).rejects.toMatchObject({ name: 'ConflictNotFoundError' })
+      let thrown = null
+      try {
+        await ConflictResolver.getConflictingVersions(projectId, path)
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).not.to.be.null
+      expect(thrown.name).to.equal('ConflictNotFoundError')
     })
 
     it('returns local and remote versions for an active conflict', async () => {
@@ -152,9 +162,14 @@ describe('ConflictResolver', () => {
 
   describe('resolve (C2 — real content work + state clearing)', () => {
     it('rejects an invalid choice', async () => {
-      await expect(
-        ConflictResolver.resolve(userId, projectId, path, 'bogus')
-      ).rejects.toThrow(/Invalid choice/)
+      let thrown = null
+      try {
+        await ConflictResolver.resolve(userId, projectId, path, 'bogus')
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).not.to.be.null
+      expect(String(thrown.message)).to.match(/Invalid choice/)
     })
 
     it('throws ConflictNotFoundError when no active conflict exists (state or credentials)', async () => {
@@ -164,9 +179,14 @@ describe('ConflictResolver', () => {
       })
       WebdavCredentials.get.mockResolvedValue(null)
 
-      await expect(
-        ConflictResolver.resolve(userId, projectId, path, 'local')
-      ).rejects.toMatchObject({ name: 'ConflictNotFoundError' })
+      let thrown = null
+      try {
+        await ConflictResolver.resolve(userId, projectId, path, 'local')
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).not.to.be.null
+      expect(thrown.name).to.equal('ConflictNotFoundError')
       expect(WebdavSync.resolveConflict).not.toHaveBeenCalled()
     })
 
@@ -220,9 +240,13 @@ describe('ConflictResolver', () => {
       WebdavSync.resolveConflict.mockResolvedValue({ success: true })
       SyncStateManager.updateProjectState.mockResolvedValue({})
 
-      await expect(
-        ConflictResolver.resolve(userId, projectId, path, 'local')
-      ).resolves.toMatchObject({ success: true })
+      const result = await ConflictResolver.resolve(
+        userId,
+        projectId,
+        path,
+        'local'
+      )
+      expect(result).toMatchObject({ success: true })
     })
 
     it('sync failure: state is NOT cleared (no silent no-op)', async () => {
@@ -233,9 +257,14 @@ describe('ConflictResolver', () => {
       WebdavCredentials.get.mockResolvedValue(null)
       WebdavSync.resolveConflict.mockRejectedValueOnce(new Error('Precondition failed for main.tex'))
 
-      await expect(
-        ConflictResolver.resolve(userId, projectId, path, 'local')
-      ).rejects.toThrow(/main\.tex/)
+      let thrown = null
+      try {
+        await ConflictResolver.resolve(userId, projectId, path, 'local')
+      } catch (e) {
+        thrown = e
+      }
+      expect(thrown).not.to.be.null
+      expect(String(thrown.message)).to.match(/main\.tex/)
       expect(SyncStateManager.updateProjectState).not.toHaveBeenCalled()
     })
   })

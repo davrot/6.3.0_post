@@ -333,13 +333,6 @@ export const SettingsModalProvider: FC<React.PropsWithChildren> = ({
         // deployment is /user/mysettings (our own shell page).
         href: '/user/mysettings',
       },
-      {
-        key: 'subscription',
-        title: t('subscription'),
-        icon: 'account_balance',
-        href: '/user/subscription',
-        hidden: !isOverleaf,
-      },
     ],
     [
       t,

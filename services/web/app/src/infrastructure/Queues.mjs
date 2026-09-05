@@ -23,10 +23,6 @@ const QUEUES_JOB_OPTIONS = {
   'analytics-user-properties': {
     removeOnFail: MAX_FAILED_JOBS_RETAINED_ANALYTICS,
   },
-  'refresh-features': {
-    removeOnFail: MAX_FAILED_JOBS_RETAINED,
-    attempts: 3,
-  },
   'analytics-email-change': {
     removeOnFail: MAX_FAILED_JOBS_RETAINED_ANALYTICS,
   },
@@ -48,14 +44,6 @@ const QUEUES_JOB_OPTIONS = {
     attempts: 3,
   },
 
-  'group-sso-reminder': {
-    removeOnFail: MAX_FAILED_JOBS_RETAINED,
-    attempts: 3,
-  },
-  'deferred-subscription-webhook-event': {
-    removeOnFail: MAX_FAILED_JOBS_RETAINED,
-    attempts: 3,
-  },
   'project-notification': {
     removeOnFail: MAX_FAILED_JOBS_RETAINED,
     attempts: 3,

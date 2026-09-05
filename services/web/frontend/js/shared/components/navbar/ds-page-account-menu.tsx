@@ -59,7 +59,6 @@ export default function DsPageAccountMenu() {
           >
             <AccountMenuItems
               sessionUser={sessionUser}
-              showSubscriptionLink={false}
               showThemeToggle={true}
             />
           </Dropdown.Menu>

@@ -1,4 +1,4 @@
-/* global describe, it */
+import { describe, it } from 'vitest'
 import { expect } from 'chai'
 import { generateDuplicateName } from '../../../app/src/Features/Project/ProjectDuplicator.mjs'
 

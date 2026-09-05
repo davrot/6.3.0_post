@@ -187,117 +187,6 @@ describe('InstitutionsManager', function () {
     ctx.InstitutionsManager = (await import(modulePath)).default
   })
 
-  describe('refreshInstitutionUsers', function () {
-    beforeEach(function (ctx) {
-      ctx.user1Id = '123abc123abc123abc123abc'
-      ctx.user2Id = '456def456def456def456def'
-      ctx.user3Id = '789abd789abd789abd789abd'
-      ctx.user4Id = '321cba321cba321cba321cba'
-      ctx.affiliations = [
-        { user_id: ctx.user1Id },
-        { user_id: ctx.user2Id },
-        { user_id: ctx.user3Id },
-        { user_id: ctx.user4Id },
-      ]
-      ctx.user1 = { _id: ctx.user1Id }
-      ctx.user2 = { _id: ctx.user2Id }
-      ctx.user3 = { _id: ctx.user3Id }
-      ctx.user4 = { _id: ctx.user4Id }
-
-      ctx.UserGetter.promises.getUser
-        .withArgs(new ObjectId(ctx.user1Id))
-        .resolves(ctx.user1)
-      ctx.UserGetter.promises.getUser
-        .withArgs(new ObjectId(ctx.user2Id))
-        .resolves(ctx.user2)
-      ctx.UserGetter.promises.getUser
-        .withArgs(new ObjectId(ctx.user3Id))
-        .resolves(ctx.user3)
-      ctx.UserGetter.promises.getUser
-        .withArgs(new ObjectId(ctx.user4Id))
-        .resolves(ctx.user4)
-
-      ctx.SubscriptionLocator.promises.getUsersSubscription
-        .withArgs(ctx.user2)
-        .resolves({
-          planCode: 'pro',
-          groupPlan: false,
-        })
-      ctx.SubscriptionLocator.promises.getUsersSubscription
-        .withArgs(ctx.user3)
-        .resolves({
-          planCode: 'collaborator_free_trial_7_days',
-          groupPlan: false,
-        })
-      ctx.SubscriptionLocator.promises.getUsersSubscription
-        .withArgs(ctx.user4)
-        .resolves({
-          planCode: 'collaborator-annual',
-          groupPlan: true,
-        })
-
-      ctx.refreshFeaturesPromise.resolves({
-        newFeatures: {},
-        featuresChanged: false,
-      })
-      ctx.refreshFeaturesPromise
-        .withArgs(new ObjectId(ctx.user1Id))
-        .resolves({ newFeatures: {}, featuresChanged: true })
-      ctx.getInstitutionAffiliationsPromise.resolves(ctx.affiliations)
-      ctx.getConfirmedInstitutionAffiliationsPromise.resolves(ctx.affiliations)
-    })
-
-    it('refresh all users Features', async function (ctx) {
-      await ctx.InstitutionsManager.promises.refreshInstitutionUsers(
-        ctx.institutionId,
-        false
-      )
-      sinon.assert.callCount(ctx.refreshFeaturesPromise, 4)
-      // expect no notifications
-      sinon.assert.notCalled(
-        ctx.NotificationsBuilder.promises.featuresUpgradedByAffiliation
-      )
-      sinon.assert.notCalled(
-        ctx.NotificationsBuilder.promises.redundantPersonalSubscription
-      )
-    })
-
-    it('notifies users if their features have been upgraded', async function (ctx) {
-      await ctx.InstitutionsManager.promises.refreshInstitutionUsers(
-        ctx.institutionId,
-        true
-      )
-      sinon.assert.calledOnce(
-        ctx.NotificationsBuilder.promises.featuresUpgradedByAffiliation
-      )
-      sinon.assert.calledWith(
-        ctx.NotificationsBuilder.promises.featuresUpgradedByAffiliation,
-        ctx.affiliations[0],
-        ctx.user1
-      )
-    })
-
-    it('notifies users if they have a subscription, or a trial subscription, that should be cancelled', async function (ctx) {
-      await ctx.InstitutionsManager.promises.refreshInstitutionUsers(
-        ctx.institutionId,
-        true
-      )
-
-      sinon.assert.calledTwice(
-        ctx.NotificationsBuilder.promises.redundantPersonalSubscription
-      )
-      sinon.assert.calledWith(
-        ctx.NotificationsBuilder.promises.redundantPersonalSubscription,
-        ctx.affiliations[1],
-        ctx.user2
-      )
-      sinon.assert.calledWith(
-        ctx.NotificationsBuilder.promises.redundantPersonalSubscription,
-        ctx.affiliations[2],
-        ctx.user3
-      )
-    })
-  })
 
   describe('checkInstitutionUsers', function () {
     it('returns entitled/not, sso/not, lapsed/current, and pro counts', async function (ctx) {
@@ -485,13 +374,6 @@ describe('InstitutionsManager', function () {
             { entitlement: undefined }
           )
           .should.equal(true)
-        ctx.refreshFeaturesPromise
-          .calledWith(ctx.stubbedUser1._id)
-          .should.equal(true)
-        ctx.refreshFeaturesPromise
-          .calledWith(ctx.stubbedUser2._id)
-          .should.equal(true)
-        ctx.refreshFeaturesPromise.should.have.been.calledTwice
       })
 
       it('should return errors if last affiliation cannot be added', async function (ctx) {

@@ -106,16 +106,6 @@ describe('UserAuditLogHandler', function () {
         ctx.UserAuditLogEntryMock.verify()
       })
 
-      it('includes managedSubscriptionId for managed group user events ', async function (ctx) {
-        await ctx.UserAuditLogHandler.promises.addEntry(
-          ctx.userId,
-          'reset-password',
-          undefined,
-          ctx.action.ip
-        )
-        ctx.UserAuditLogEntryMock.verify()
-        expect(ctx.getUniqueManagedSubscriptionMemberOfMock).to.have.been.called
-      })
 
       it('does not includes managedSubscriptionId for events not in the managed group event list', async function (ctx) {
         await ctx.UserAuditLogHandler.promises.addEntry(

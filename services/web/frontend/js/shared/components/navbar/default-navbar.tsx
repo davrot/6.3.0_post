@@ -32,11 +32,9 @@ function DefaultNavbar(
     canDisplaySplitTestMenu,
     canDisplaySurveyMenu,
     canDisplayScriptLogMenu,
-    enableUpgradeButton,
     suppressNavbarRight,
     suppressNavContentLinks,
     showCloseIcon = false,
-    showSubscriptionLink,
     showSignUpLink,
     sessionUser,
     adminUrl,
@@ -73,23 +71,6 @@ function DefaultNavbar(
               overleafLogo={overleafLogo}
               customLogo={customLogo}
             />
-            {enableUpgradeButton ? (
-              <Button
-                as="a"
-                href="/user/subscription/plans"
-                className="me-2 d-md-none"
-                onClick={() => {
-                  sendMB('upgrade-button-click', {
-                    source: 'dashboard-top',
-                    'project-dashboard-react': 'enabled',
-                    'is-dashboard-sidebar-hidden': 'true',
-                    'is-screen-width-less-than-768px': 'true',
-                  })
-                }}
-              >
-                {t('upgrade')}
-              </Button>
-            ) : null}
           </div>
           {suppressNavbarRight ? null : (
             <>
@@ -139,7 +120,6 @@ function DefaultNavbar(
                   {sessionUser ? (
                     <LoggedInItems
                       sessionUser={sessionUser}
-                      showSubscriptionLink={showSubscriptionLink}
                     />
                   ) : (
                     <LoggedOutItems showSignUpLink={showSignUpLink} />

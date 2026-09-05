@@ -2,7 +2,6 @@ import MaterialIcon from '@/shared/components/material-icon'
 import { Trans, useTranslation } from 'react-i18next'
 import { GroupSSOLinkingStatus } from '../../../../../types/subscription/sso'
 import getMeta from '../../../utils/meta'
-import OLButton from '@/shared/components/ol/ol-button'
 
 function SecuritySection() {
   const { t } = useTranslation()
@@ -80,16 +79,9 @@ function SecuritySection() {
                     )}
                   </div>
                 </div>
-                {linked ? null : (
-                  <div className="button-column">
-                    <OLButton
-                      variant="primary"
-                      href={`/subscription/${groupId}/sso_enrollment`}
-                    >
-                      {t('set_up_sso')}
-                    </OLButton>
-                  </div>
-                )}
+                <!-- OlliTeX fork (free-only): the SaaS group-SSO enrollment
+                     route (/subscription/:groupId/sso_enrollment) was removed;
+                     institutional SSO is configured by the site admin instead. -->
               </div>
             )
           )}

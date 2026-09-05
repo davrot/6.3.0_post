@@ -13,12 +13,10 @@ export type DefaultNavbarMetadata = {
   canDisplaySplitTestMenu: boolean
   canDisplaySurveyMenu: boolean
   canDisplayScriptLogMenu: boolean
-  enableUpgradeButton: boolean
   suppressNavbarRight: boolean
   canDisplayInstanceStats?: boolean
   suppressNavContentLinks: boolean
   showCloseIcon?: boolean
-  showSubscriptionLink: boolean
   showSignUpLink: boolean
   currentUrl: string
   sessionUser?: NavbarSessionUser

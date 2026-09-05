@@ -1,5 +1,4 @@
-/* global describe, it */
-import { expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import UrlPolicy from '../../../app/src/Features/LinkedFiles/UrlPolicy.mjs'
 import LinkedFilesErrors from '../../../app/src/Features/LinkedFiles/LinkedFilesErrors.mjs'
 

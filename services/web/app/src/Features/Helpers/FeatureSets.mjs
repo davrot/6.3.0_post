@@ -1,3 +1,9 @@
+// OlliTeX fork (2026-09-05): relocated from app/src/Features/Subscription/
+// FeaturesHelper.mjs (SaaS folder removed). These are the generic feature-set
+// merge utilities used by CE code paths (user feature computation, admin
+// feature overrides) — kept verbatim apart from the SaaS-only parts of the
+// original file (plan/subscription resolution), which are gone.
+
 import _ from 'lodash'
 import Settings from '@overleaf/settings'
 

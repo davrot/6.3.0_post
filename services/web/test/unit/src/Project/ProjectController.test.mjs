@@ -117,6 +117,8 @@ describe('ProjectController', function () {
     ctx.EditorController = {
       promises: {
         renameProject: sinon.stub().resolves(),
+        // 6.3.0: loadEditor sets a default image name on projects that lack one
+        setImageName: sinon.stub().resolves(),
       },
     }
     ctx.InactiveProjectManager = {
@@ -1017,28 +1019,6 @@ describe('ProjectController', function () {
       })
     })
 
-    it('should redirect to domain capture page', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      ctx.SplitTestHandler.promises.getAssignment
-        .withArgs(ctx.req, ctx.res, 'domain-capture-redirect')
-        .resolves({ variant: 'enabled' })
-      ctx.Modules.promises.hooks.fire
-        .withArgs('findDomainCaptureGroupsUserCouldBePartOf', ctx.user._id)
-        .resolves([
-          [
-            {
-              subscription: { managedUsersEnabled: true },
-            },
-          ],
-        ])
-      await new Promise(resolve => {
-        ctx.res.redirect = url => {
-          url.should.equal('/domain-capture')
-          resolve()
-        }
-        ctx.ProjectController.loadEditor(ctx.req, ctx.res)
-      })
-    })
 
     it('should add user', async function (ctx) {
       await new Promise(resolve => {
@@ -1239,23 +1219,6 @@ describe('ProjectController', function () {
       })
     })
 
-    it('should refresh the user features if the epoch is outdated', async function (ctx) {
-      ctx.Features.hasFeature.withArgs('saas').returns(true)
-      await new Promise((resolve, reject) => {
-        ctx.FeaturesUpdater.featuresEpochIsCurrent = sinon.stub().returns(false)
-        ctx.res.render = (_, data) => {
-          ctx.FeaturesUpdater.promises.refreshFeatures.should.have.been.calledWith(
-            ctx.user._id,
-            'load-editor'
-          )
-          expect(data.showSymbolPalette).to.equal(true)
-          resolve()
-        }
-        ctx.ProjectController.loadEditor(ctx.req, ctx.res, err => {
-          if (err) reject(err)
-        })
-      })
-    })
 
     describe('wsUrl', function () {
       function checkLoadEditorWsMetric(metric) {
@@ -1515,15 +1478,6 @@ describe('ProjectController', function () {
         await new Promise(resolve => {
           ctx.res.render = (pageName, opts) => {
             expect(opts.showUpgradePrompt).to.equal(false)
-            resolve()
-          }
-          ctx.ProjectController.loadEditor(ctx.req, ctx.res)
-        })
-      })
-      it('should show for a user without a subscription or only non-paid affiliations', async function (ctx) {
-        await new Promise(resolve => {
-          ctx.res.render = (pageName, opts) => {
-            expect(opts.showUpgradePrompt).to.equal(true)
             resolve()
           }
           ctx.ProjectController.loadEditor(ctx.req, ctx.res)

@@ -2,6 +2,8 @@ import { expect, it, describe } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
 import {
   DEFAULT_WRAPPER,
   EXPORT_WRAPPERS,
@@ -218,17 +220,24 @@ describe('mathlive version pin', () => {
   it('keeps the fontsDirectory path in sync with the installed mathlive', () => {
     const here = dirname(fileURLToPath(import.meta.url))
     const findPkg = () => {
-      let dir = here
-      for (;;) {
-        const candidate = join(dir, 'node_modules', 'mathlive', 'package.json')
-        if (existsSync(candidate)) {
-          return JSON.parse(readFileSync(candidate, 'utf8'))
+      // Yarn PnP: packages live in .yarn/cache, not node_modules — resolve
+      // through the PnP-aware require when possible, else walk up.
+      try {
+        const entry = require.resolve('mathlive')
+        return JSON.parse(readFileSync(join(dirname(entry), 'package.json'), 'utf8'))
+      } catch (e) {
+        let dir = here
+        for (;;) {
+          const candidate = join(dir, 'node_modules', 'mathlive', 'package.json')
+          if (existsSync(candidate)) {
+            return JSON.parse(readFileSync(candidate, 'utf8'))
+          }
+          const parent = dirname(dir)
+          if (parent === dir) {
+            throw new Error('mathlive package not found in any ancestor node_modules')
+          }
+          dir = parent
         }
-        const parent = dirname(dir)
-        if (parent === dir) {
-          throw new Error('mathlive package not found in any ancestor node_modules')
-        }
-        dir = parent
       }
     }
     const mathlivePkg = findPkg()

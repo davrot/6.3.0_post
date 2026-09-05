@@ -774,7 +774,20 @@ async function writeSnapshot(siteSettings) {
   try {
     invalidateCache()
     const doc = await siteSettings.findOne({ _id: SECTION_ID })
-    const snapshots = siteSettings.db.collection('site_settings_snapshots')
+    // Native db accessor: the collection object itself does not expose
+    // `.db` in this driver version — go through the shared db module.
+    let snapshots
+    try {
+      const dbModule = await import('../../infrastructure/mongodb.mjs')
+      snapshots = await dbModule.getCollectionInternal('site_settings_snapshots')
+    } catch (err) {
+      snapshots = siteSettings.collection
+        ? siteSettings.collection.collection('site_settings_snapshots')
+        : null
+    }
+    if (!snapshots) {
+      throw new Error('snapshot collection unavailable')
+    }
     await snapshots.insertOne({
       at: new Date(),
       doc,

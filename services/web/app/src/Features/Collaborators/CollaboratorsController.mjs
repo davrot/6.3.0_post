@@ -14,7 +14,6 @@ import { expressify } from '@overleaf/promise-utils'
 import AdminAuthorizationHelper from '../Helpers/AdminAuthorizationHelper.mjs'
 import TokenAccessHandler from '../TokenAccess/TokenAccessHandler.mjs'
 import ProjectAuditLogHandler from '../Project/ProjectAuditLogHandler.mjs'
-import LimitationsManager from '../Subscription/LimitationsManager.mjs'
 import PrivilegeLevels from '../Authorization/PrivilegeLevels.mjs'
 import AuthorizationManager from '../Authorization/AuthorizationManager.mjs'
 import AnalyticsManager from '../Analytics/AnalyticsManager.mjs'
@@ -182,20 +181,6 @@ async function setCollaboratorInfo(req, res, next) {
     const projectId = params.Project_id
     const userId = params.user_id
     const { privilegeLevel } = body
-
-    const allowed =
-      await LimitationsManager.promises.canChangeCollaboratorPrivilegeLevel(
-        projectId,
-        userId,
-        privilegeLevel
-      )
-    if (!allowed) {
-      return HttpErrorHandler.forbidden(
-        req,
-        res,
-        'edit collaborator limit reached'
-      )
-    }
 
     const auditInfo = {
       ipAddress: req.ip,
@@ -459,35 +444,13 @@ async function grantAccessRequest(req, res) {
   const { privilegeLevel, notify } = body
   const sessionUserId = SessionManager.getLoggedInUserId(req.session)
 
-  // Capture the requester's current access and any pending request up front:
-  // the request tells us whether to notify (setCollaboratorPrivilegeLevel
-  // clears it as a side effect), and the current level lets us keep a repeat
-  // grant idempotent.
+  // Capture the requester's pending request up front: it tells us whether to
+  // notify (setCollaboratorPrivilegeLevel clears it as a side effect).
+  // OlliTeX fork (free-only): SaaS edit-collaborator seat limits removed —
+  // repeat grants stay idempotent without a current-level check.
   const projectAccess =
     await CollaboratorsGetter.promises.getProjectAccess(projectId)
-  const currentPrivilegeLevel = projectAccess.privilegeLevelForUser(requesterId)
   const hadRequest = Boolean(projectAccess.getAccessRequestForUser(requesterId))
-
-  // Granting editor/reviewer access consumes an edit-collaborator slot, so
-  // refuse if it would push the project over its collaborator limit — same
-  // guard the regular "change privilege level" flow uses. Skip it when the
-  // requester already holds the target level, so retrying a grant that
-  // already succeeded stays idempotent even at the limit.
-  if (currentPrivilegeLevel !== privilegeLevel) {
-    const allowed =
-      await LimitationsManager.promises.canChangeCollaboratorPrivilegeLevel(
-        projectId,
-        requesterId,
-        privilegeLevel
-      )
-    if (!allowed) {
-      return HttpErrorHandler.forbidden(
-        req,
-        res,
-        'edit collaborator limit reached'
-      )
-    }
-  }
 
   // A NotFoundError (requester is no longer a member) is translated to a 404
   // by the error-handling middleware.

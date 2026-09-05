@@ -103,11 +103,9 @@ function useNavExtraItems(sessionUser: NavbarSessionUser | undefined) {
 
 export function AccountMenuItems({
   sessionUser,
-  showSubscriptionLink,
   showThemeToggle = false,
 }: {
   sessionUser: NavbarSessionUser
-  showSubscriptionLink: boolean
   showThemeToggle?: boolean
 }) {
   const { t } = useTranslation()
@@ -146,11 +144,6 @@ export function AccountMenuItems({
       {getMeta('ol-ExposedSettings')?.llmAllowUserSettings ? (
         <NavDropdownLinkItem href="/user/llm-settings">
           {t('ai_settings', 'AI Settings')}
-        </NavDropdownLinkItem>
-      ) : null}
-      {showSubscriptionLink ? (
-        <NavDropdownLinkItem href="/user/subscription">
-          {t('subscription')}
         </NavDropdownLinkItem>
       ) : null}
       {/* R9 item 5 (2026-08-29): template gallery management lives in the

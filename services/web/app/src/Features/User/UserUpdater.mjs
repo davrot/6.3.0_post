@@ -6,15 +6,12 @@ import { callbackify } from 'node:util'
 import UserGetter from './UserGetter.mjs'
 import InstitutionsAPI from '../Institutions/InstitutionsAPI.mjs'
 import Features from '../../infrastructure/Features.mjs'
-import FeaturesUpdater from '../Subscription/FeaturesUpdater.mjs'
 import EmailHandler from '../Email/EmailHandler.mjs'
 import EmailHelper from '../Helpers/EmailHelper.mjs'
 import Errors from '../Errors/Errors.js'
 import UserAuditLogHandler from './UserAuditLogHandler.mjs'
 import AnalyticsManager from '../Analytics/AnalyticsManager.mjs'
 import EmailChangeHelper from '../Analytics/EmailChangeHelper.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
-import NotificationsBuilder from '../Notifications/NotificationsBuilder.mjs'
 import _ from 'lodash'
 import Modules from '../../infrastructure/Modules.mjs'
 import UserSessionsManager from './UserSessionsManager.mjs'
@@ -179,10 +176,7 @@ async function clearSAMLData(userId, auditLog, sendEmail) {
     await InstitutionsAPI.promises.removeEntitlement(userId, emailData.email)
   }
 
-  await FeaturesUpdater.promises.refreshFeatures(
-    userId,
-    'clear-institution-sso-data'
-  )
+  // OlliTeX fork (free-only): SaaS feature-refresh removed.
 
   if (sendEmail) {
     await EmailHandler.promises.sendEmail('SAMLDataCleared', { to: user.email })
@@ -415,7 +409,8 @@ async function confirmEmail(userId, email, affiliationOptions) {
   if (res.matchedCount !== 1) {
     throw new Errors.NotFoundError('user id and email do no match')
   }
-  await FeaturesUpdater.promises.refreshFeatures(userId, 'confirm-email')
+  // OlliTeX fork (free-only): SaaS feature-refresh + redundant-subscription
+  // notification removed.
 
   try {
     await EmailChangeHelper.registerEmailUpdate(userId, email, {
@@ -429,40 +424,6 @@ async function confirmEmail(userId, email, affiliationOptions) {
       'Error registering email confirmation with analytics'
     )
   }
-
-  try {
-    await maybeCreateRedundantSubscriptionNotification(userId, email)
-  } catch (error) {
-    logger.err(
-      { err: error },
-      'error checking redundant subscription on email confirmation'
-    )
-  }
-}
-
-async function maybeCreateRedundantSubscriptionNotification(userId, email) {
-  const subscription =
-    await SubscriptionLocator.promises.getUserIndividualSubscription(userId)
-  if (!subscription || subscription.groupPlan) {
-    return
-  }
-
-  const affiliations =
-    await InstitutionsAPI.promises.getUserAffiliations(userId)
-  const confirmedAffiliation = affiliations.find(a => a.email === email)
-  if (!confirmedAffiliation || confirmedAffiliation.licence === 'free') {
-    return
-  }
-
-  await NotificationsBuilder.promises
-    .redundantPersonalSubscription(
-      {
-        institutionId: confirmedAffiliation.institution.id,
-        institutionName: confirmedAffiliation.institution.name,
-      },
-      { _id: userId }
-    )
-    .create()
 }
 
 async function removeEmailAddress(
@@ -536,8 +497,6 @@ async function removeEmailAddress(
       'Error registering email deletion with analytics'
     )
   }
-
-  await FeaturesUpdater.promises.refreshFeatures(userId, 'remove-email')
 }
 
 async function addAffiliationForNewUser(

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Repro for React #137 ('got: input') when opening the BYO "Add provider" draft.
 // DEV-mode render so the full error message + component stack are visible.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true

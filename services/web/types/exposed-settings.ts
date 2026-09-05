@@ -10,7 +10,6 @@ export type ExposedSettings = {
   cookieDomain: string
   dropboxAppName: string
   emailConfirmationDisabled: boolean
-  enableSubscriptions: boolean
   gaToken?: string
   gaTokenV4?: string
   hasAffiliationsFeature: boolean

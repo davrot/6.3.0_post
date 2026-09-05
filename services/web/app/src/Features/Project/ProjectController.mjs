@@ -14,10 +14,6 @@ import EditorController from '../Editor/EditorController.mjs'
 import ProjectHelper from './ProjectHelper.mjs'
 import metrics from '@overleaf/metrics'
 import { User } from '../../models/User.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
-import SubscriptionHelper from '../Subscription/SubscriptionHelper.mjs'
-import LimitationsManager from '../Subscription/LimitationsManager.mjs'
-import { isProfessionalGroupPlan } from '../Subscription/PlansHelper.mjs'
 import Settings from '@overleaf/settings'
 import AuthorizationManager from '../Authorization/AuthorizationManager.mjs'
 import InactiveProjectManager from '../InactiveData/InactiveProjectManager.mjs'
@@ -37,7 +33,6 @@ import AnalyticsManager from '../Analytics/AnalyticsManager.mjs'
 import LocalsHelper from '../SplitTests/LocalsHelper.mjs'
 import SplitTestHandler from '../SplitTests/SplitTestHandler.mjs'
 import SplitTestSessionHandler from '../SplitTests/SplitTestSessionHandler.mjs'
-import FeaturesUpdater from '../Subscription/FeaturesUpdater.mjs'
 import SpellingHandler from '../Spelling/SpellingHandler.mjs'
 import AdminAuthorizationHelper from '../Helpers/AdminAuthorizationHelper.mjs'
 import InstitutionsFeatures from '../Institutions/InstitutionsFeatures.mjs'
@@ -50,8 +45,6 @@ import UserUpdater from '../User/UserUpdater.mjs'
 import Modules from '../../infrastructure/Modules.mjs'
 import { z, zz, parseReq } from '../../infrastructure/Validation.mjs'
 import UserGetter from '../User/UserGetter.mjs'
-import { isStandaloneAiAddOnPlanCode } from '../Subscription/AiHelper.mjs'
-import SubscriptionController from '../Subscription/SubscriptionController.mjs'
 import UserSettingsHelper from './UserSettingsHelper.mjs'
 import AiFeatureUsageRateLimiter from '../../infrastructure/rate-limiters/AiFeatureUsageRateLimiter.mjs'
 import WorkbenchRateLimiter from '../../infrastructure/rate-limiters/WorkbenchRateLimiter.mjs'
@@ -59,7 +52,6 @@ import PermissionsManager from '../Authorization/PermissionsManager.mjs'
 import { FileTooLargeError } from '../Errors/Errors.js'
 
 const { checkUserPermissions } = PermissionsManager.promises
-const { isPaidSubscription } = SubscriptionHelper
 const { hasAdminAccess } = AdminAuthorizationHelper
 const { ObjectId } = mongodb
 /**
@@ -571,36 +563,6 @@ const _ProjectController = {
       userId = null
     }
 
-    if (Features.hasFeature('saas') && userId) {
-      const { variant: domainCaptureRedirect } =
-        await SplitTestHandler.promises.getAssignment(
-          req,
-          res,
-          'domain-capture-redirect'
-        )
-
-      if (domainCaptureRedirect === 'enabled') {
-        const groupsWithEmails = (
-          await Modules.promises.hooks.fire(
-            'findDomainCaptureGroupsUserCouldBePartOf',
-            userId
-          )
-        )?.[0]
-
-        if (groupsWithEmails && groupsWithEmails.length > 0) {
-          if (
-            groupsWithEmails.some(
-              ({ subscription }) => subscription.managedUsersEnabled
-            )
-          ) {
-            return res.redirect('/domain-capture')
-          } else {
-            // TODO show notification or anything else
-          }
-        }
-      }
-    }
-
     const projectId = params.Project_id
 
     // should not be used in place of split tests query param overrides (?my-split-test-name=my-variant)
@@ -675,9 +637,8 @@ const _ProjectController = {
               return
             }
             logger.debug({ projectId, userId }, 'got user')
-            return FeaturesUpdater.featuresEpochIsCurrent(user)
-              ? user
-              : await ProjectController._refreshFeatures(req, user)
+            // OlliTeX fork (free-only): SaaS feature-epoch refresh removed.
+            return user
           })(),
           learnedWords: SpellingHandler.promises.getUserDictionary(userId),
           projectTags: TagsHandler.promises.getTagsForProject(
@@ -699,8 +660,8 @@ const _ProjectController = {
               )
               return false
             }),
-          subscription:
-            SubscriptionLocator.promises.getUsersSubscription(userId),
+          // OlliTeX fork (free-only): no SaaS subscriptions — always undefined.
+          subscription: undefined,
           isTokenMember: CollaboratorsGetter.promises.userIsTokenMember(
             userId,
             projectId
@@ -730,23 +691,9 @@ const _ProjectController = {
           tokens: 1,
           imageName: 1,
         }),
-        userIsMemberOfGroupSubscription: sessionUser
-          ? (async () =>
-              (
-                await LimitationsManager.promises.userIsMemberOfGroupSubscription(
-                  sessionUser
-                )
-              ).isMember)()
-          : false,
-        activeProfessionalGroupSubscriptions:
-          SubscriptionLocator.promises.getUserActiveProfessionalGroupSubscriptions(
-            userId,
-            {
-              _id: 1,
-              teamName: 1,
-              sharingPermissions: 1,
-            }
-          ),
+        // OlliTeX fork (free-only): SaaS group subscriptions removed.
+        userIsMemberOfGroupSubscription: false,
+        activeProfessionalGroupSubscriptions: [],
       })
 
       const {
@@ -778,10 +725,9 @@ const _ProjectController = {
           inEnterpriseCommons || affiliation.institution?.enterpriseCommons
       }
 
-      const allowedFreeTrial =
-        subscription == null ||
-        isStandaloneAiAddOnPlanCode(subscription.planCode)
-
+      // OlliTeX fork (free-only): no SaaS free-trial gating (always allowed,
+      // CE AI features remain free).
+      const allowedFreeTrial = true
       const splitTestAssignments = Object.fromEntries(
         await Promise.all(
           splitTests.map(async splitTest => [
@@ -956,19 +902,13 @@ const _ProjectController = {
         !Features.hasFeature('saas') ||
         (user.features && user.features.symbolPalette)
 
-      const userInNonIndividualSub =
-        userIsMemberOfGroupSubscription || userHasInstitutionLicence
+      // OlliTeX fork (free-only): no SaaS paid subscriptions — the only
+      // "non-individual sub" concept left is a CE institutional-SSO licence.
+      const userInNonIndividualSub = userHasInstitutionLicence
+      const userHasPremiumSub = false
 
-      const userHasPremiumSub =
-        subscription && !isStandaloneAiAddOnPlanCode(subscription.planCode)
-
-      // Persistent upgrade prompts
-      // in header & in share project modal
-      const showUpgradePrompt =
-        Features.hasFeature('saas') &&
-        userId &&
-        !userHasPremiumSub &&
-        !userInNonIndividualSub
+      // OlliTeX fork (free-only): upgrade prompts removed (no premium plans).
+      const showUpgradePrompt = false
 
       let aiFeaturesAllowedForUser = false
       let aiFeaturesAllowedForProject = false
@@ -999,21 +939,7 @@ const _ProjectController = {
       }
 
       let featureUsage = {}
-
-      if (Features.hasFeature('saas') && !anonymous) {
-        featureUsage = {
-          ...(await AiFeatureUsageRateLimiter.getRemainingFeatureUses(userId)),
-          ...(await WorkbenchRateLimiter.getRemainingTokens(userId)),
-        }
-      }
-
-      await ProjectController._setWritefullTrialState(
-        user,
-        userValues,
-        userId,
-        aiFeaturesAllowedForUser && aiFeaturesAllowedForProject,
-        userIsMemberOfGroupSubscription
-      )
+      // OlliTeX fork (free-only): SaaS feature-usage quotas removed.
 
       AnalyticsManager.setUserPropertyForSessionInBackground(
         req.session,
@@ -1047,7 +973,9 @@ const _ProjectController = {
         fullFeatureSet = await UserGetter.promises.getUserFeatures(userId)
       }
 
-      const hasPaidSubscription = isPaidSubscription(subscription)
+      // OlliTeX fork (free-only): no paid subscription / plan pricing / billing
+      // currency (SaaS subscription + SubscriptionController removed).
+      const hasPaidSubscription = false
       const aiFeaturesDisabled = user.aiFeatures?.enabled === false
 
       let showAiFeatures = aiFeaturesAllowedForUser && !aiFeaturesDisabled
@@ -1062,28 +990,14 @@ const _ProjectController = {
 
       let standardPlanPricing
       let recommendedCurrency
-      if (Features.hasFeature('saas')) {
-        standardPlanPricing = await ProjectController._getPlanPricing(
-          req,
-          res,
-          'collaborator'
-        )
-        const { currency } =
-          await SubscriptionController.getRecommendedCurrency(req, res)
-        recommendedCurrency = currency
-      }
+      // OlliTeX fork (free-only): SaaS plan pricing removed — always null.
 
-      let planCode = subscription?.planCode
-      if (!planCode && !userInNonIndividualSub) {
-        planCode = 'personal'
-      }
-
+      let planCode = 'personal'
       const planDetails = Settings.plans.find(p => p.planCode === planCode)
 
       const shouldLoadHotjar =
         splitTestAssignments['compile-timeout-target-plans']?.variant ===
           'enabled' &&
-        !userHasPremiumSub &&
         !userInNonIndividualSub
 
       const userSettings = await UserSettingsHelper.buildUserSettings(
@@ -1147,12 +1061,10 @@ const _ProjectController = {
           planCode,
           planName: planDetails?.name,
           isAnnualPlan: planCode && planDetails?.annual,
-          isProfessionalGroupPlan: Boolean(
-            subscription && isProfessionalGroupPlan(subscription)
-          ),
-          isMemberOfGroupSubscription: userIsMemberOfGroupSubscription,
+          isProfessionalGroupPlan: false,
+          isMemberOfGroupSubscription: false,
           hasInstitutionLicence: userHasInstitutionLicence,
-          activeProfessionalGroupSubscriptions,
+          activeProfessionalGroupSubscriptions: [],
         },
         initialLoadingScreenTheme,
         userSettings,
@@ -1220,89 +1132,6 @@ const _ProjectController = {
     }
   },
 
-  async _getPlanPricing(req, res, plan = 'collaborator') {
-    const { currency } = await SubscriptionController.getRecommendedCurrency(
-      req,
-      res
-    )
-
-    const pricingForCurrency = Settings.localizedPlanPricing[currency]
-    if (!pricingForCurrency) {
-      return null
-    }
-
-    const planPricing = pricingForCurrency[plan]
-    if (!planPricing) {
-      return null
-    }
-
-    return {
-      monthly: planPricing.monthly,
-      annual: planPricing.annual,
-    }
-  },
-
-  async _refreshFeatures(req, user) {
-    // If the feature refresh has failed in this session, don't retry
-    // it - require the user to log in again.
-    if (req.session.feature_refresh_failed) {
-      metrics.inc('features-refresh', 1, {
-        path: 'load-editor',
-        status: 'skipped',
-      })
-      return user
-    }
-    // If the refresh takes too long then return the current
-    // features. Note that the user.features property may still be
-    // updated in the background after the promise is resolved.
-    const abortController = new AbortController()
-    const refreshTimeoutHandler = async () => {
-      await setTimeout(5000, { signal: abortController.signal })
-      req.session.feature_refresh_failed = {
-        reason: 'timeout',
-        at: new Date(),
-      }
-      metrics.inc('features-refresh', 1, {
-        path: 'load-editor',
-        status: 'timeout',
-      })
-      return user
-    }
-
-    // try to refresh user features now
-    const timer = new metrics.Timer('features-refresh-on-load-editor')
-
-    return Promise.race([
-      refreshTimeoutHandler(),
-      (async () => {
-        try {
-          const { features } = await FeaturesUpdater.promises.refreshFeatures(
-            user._id,
-            'load-editor'
-          )
-          user.features = features
-          metrics.inc('features-refresh', 1, {
-            path: 'load-editor',
-            status: 'success',
-          })
-        } catch (err) {
-          // keep a record to prevent unneceary retries and leave
-          // the original features unmodified if the refresh failed
-          req.session.feature_refresh_failed = {
-            reason: 'error',
-            at: new Date(),
-          }
-          metrics.inc('features-refresh', 1, {
-            path: 'load-editor',
-            status: 'error',
-          })
-        }
-        abortController.abort()
-        timer.done()
-        return user
-      })(),
-    ])
-  },
   _buildProjectList(allProjects, userId) {
     let project
     const {
@@ -1437,50 +1266,6 @@ const _ProjectController = {
     return portalTemplates
   },
 
-  async _setWritefullTrialState(
-    user,
-    userValues,
-    userId,
-    aiFeaturesAllowed,
-    userIsMemberOfGroupSubscription
-  ) {
-    if (!aiFeaturesAllowed) {
-      return
-    }
-
-    const affiliations = userValues.affiliations
-    const affiliateLookupFailed = affiliations === false
-
-    // if affiliations is specifically false instead of empty, we know the affiliate lookup failed, and should defer to blocking auto-loading
-    const inEnterpriseCommons =
-      affiliateLookupFailed ||
-      affiliations.some(
-        affiliation => affiliation.institution?.enterpriseCommons
-      )
-
-    const shouldPushWritefull =
-      user.writefull?.initialized === false && !userIsMemberOfGroupSubscription
-
-    // we dont have legal approval to push enterprise commons into WF auto-account-create, but we are able to auto-load it into the toolbar
-    const shouldAutoCreateAccount = shouldPushWritefull && !inEnterpriseCommons
-    const shouldAutoLoad = shouldPushWritefull && inEnterpriseCommons
-
-    if (shouldAutoCreateAccount) {
-      await UserUpdater.promises.updateUser(userId, {
-        $set: {
-          writefull: { autoCreatedAccount: true, initialized: true },
-        },
-      })
-      user.writefull.autoCreatedAccount = true
-    } else if (shouldAutoLoad) {
-      await UserUpdater.promises.updateUser(userId, {
-        $set: {
-          writefull: { autoCreatedAccount: false, initialized: true },
-        },
-      })
-      user.writefull.autoCreatedAccount = false
-    }
-  },
 }
 
 const defaultSettingsForAnonymousUser = userId => ({
@@ -1594,9 +1379,6 @@ const ProjectController = {
   _buildProjectViewModel: _ProjectController._buildProjectViewModel,
   _injectProjectUsers: _ProjectController._injectProjectUsers,
   _isInPercentageRollout: _ProjectController._isInPercentageRollout,
-  _refreshFeatures: _ProjectController._refreshFeatures,
-  _getPlanPricing: _ProjectController._getPlanPricing,
-  _setWritefullTrialState: _ProjectController._setWritefullTrialState,
 }
 
 export default ProjectController

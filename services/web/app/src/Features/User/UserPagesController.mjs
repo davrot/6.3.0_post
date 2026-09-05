@@ -5,7 +5,6 @@ import logger from '@overleaf/logger'
 import Settings from '@overleaf/settings'
 import AuthenticationController from '../Authentication/AuthenticationController.mjs'
 import SessionManager from '../Authentication/SessionManager.mjs'
-import SubscriptionLocator from '../Subscription/SubscriptionLocator.mjs'
 import { getSection } from '../SiteSettings/SiteSettingsManager.mjs'
 import _ from 'lodash'
 import { expressify } from '@overleaf/promise-utils'
@@ -76,7 +75,7 @@ async function settingsPage(req, res) {
   const reconfirmedViaSAML = _.get(req.session, ['saml', 'reconfirmed'])
   delete req.session.saml
   let shouldAllowEditingDetails = true
-  const externalAuth = req.user.externalAuth
+  const externalAuth = req.user?.externalAuth
   if (externalAuth && Settings[externalAuth].updateUserDetailsOnLogin) {
     shouldAllowEditingDetails = false
   }
@@ -104,39 +103,11 @@ async function settingsPage(req, res) {
     logger.error({ err, userId }, err.message)
   }
 
-  let currentManagedUserAdminEmail
-  try {
-    currentManagedUserAdminEmail =
-      await SubscriptionLocator.promises.getAdminEmail(req.managedBy)
-  } catch (err) {
-    logger.error({ err }, 'error getting subscription admin email')
-  }
+  let currentManagedUserAdminEmail // SaaS managed users: always undefined in free fork
 
-  let memberOfSSOEnabledGroups = []
-  try {
-    memberOfSSOEnabledGroups =
-      (
-        await Modules.promises.hooks.fire(
-          'getUserGroupsSSOEnrollmentStatus',
-          user._id,
-          { teamName: 1 },
-          ['email']
-        )
-      )?.[0] || []
-    memberOfSSOEnabledGroups = memberOfSSOEnabledGroups.map(group => {
-      return {
-        groupId: group._id.toString(),
-        linked: group.linked,
-        groupName: group.teamName,
-        adminEmail: group.admin_id?.email,
-      }
-    })
-  } catch (error) {
-    logger.error(
-      { err: error },
-      'error fetching groups with Group SSO enabled the user may be member of'
-    )
-  }
+  // OlliTeX fork (free-only): SaaS "groups with Group SSO enabled" membership
+  // removed with the group-subscription feature.
+
 
   await SplitTestHandler.promises.getAssignment(req, res, 'email-notifications')
 
@@ -195,7 +166,7 @@ async function settingsPage(req, res) {
     currentManagedUserAdminEmail,
     gitBridgeEnabled: Settings.enableGitBridge,
     isSaas: Features.hasFeature('saas'),
-    memberOfSSOEnabledGroups,
+    memberOfSSOEnabledGroups: [],
     capabilities: [...req.capabilitySet],
   })
 }

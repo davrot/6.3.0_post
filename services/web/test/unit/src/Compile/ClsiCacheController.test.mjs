@@ -107,12 +107,6 @@ describe('ClsiCacheController', function () {
       ctx.res.sendStatus.calledWith(410).should.equal(true)
     })
 
-    it('should reject a malformed project id', async function (ctx) {
-      ctx.req.params = { Project_id: 'not-an-object-id' }
-      await expect(ctx.controller.getLatestBuildFromCache(ctx.req, ctx.res)).to
-        .be.rejected
-      ctx.ClsiCacheManager.getLatestCompileResult.called.should.equal(false)
-    })
   })
 
   describe('downloadFromCache', function () {

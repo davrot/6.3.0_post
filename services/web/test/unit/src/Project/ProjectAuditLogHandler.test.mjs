@@ -67,20 +67,6 @@ describe('ProjectAuditLogHandler', function (ctx) {
       })
     })
 
-    it('includes managedSubscriptionId when the user is managed ', async function (ctx) {
-      ctx.getUniqueManagedSubscriptionMemberOfMock.resolves({
-        _id: subscriptionId,
-      })
-      await ctx.ProjectAuditLogHandler.promises.addEntry(
-        projectId,
-        'accept-invite', // this event logs managedSubscriptionId when available
-        userId,
-        '0:0:0:0'
-      )
-      expect(ctx.createEntryMock).to.have.been.calledWithMatch({
-        managedSubscriptionId: subscriptionId.toString(),
-      })
-    })
 
     it('does not include managedSubscriptionId when the user is managed, but the event is not of managed group interest', async function (ctx) {
       ctx.getUniqueManagedSubscriptionMemberOfMock.resolves({
@@ -97,28 +83,6 @@ describe('ProjectAuditLogHandler', function (ctx) {
       })
     })
 
-    it('adds multiple entries when the log involves multiple group subscriptions', async function (ctx) {
-      ctx.getUniqueManagedSubscriptionMemberOfMock.onFirstCall().resolves({
-        _id: subscriptionId,
-      })
-      ctx.getUniqueManagedSubscriptionMemberOfMock.onSecondCall().resolves({
-        _id: subscriptionId2,
-      })
-      await ctx.ProjectAuditLogHandler.promises.addEntry(
-        projectId,
-        'transfer-ownership',
-        userId,
-        '0:0:0:0',
-        { previousOwnerId, newOwnerId }
-      )
-      expect(ctx.createEntryMock).to.have.been.calledTwice
-      expect(ctx.createEntryMock).to.have.been.calledWithMatch({
-        managedSubscriptionId: subscriptionId.toString(),
-      })
-      expect(ctx.createEntryMock).to.have.been.calledWithMatch({
-        managedSubscriptionId: subscriptionId2.toString(),
-      })
-    })
   })
 
   describe('addEntryIfManaged', function () {
@@ -129,22 +93,6 @@ describe('ProjectAuditLogHandler', function (ctx) {
         })
       })
 
-      it('adds an entry in the DB if the event is of interest of managed groups ', async function (ctx) {
-        await ctx.ProjectAuditLogHandler.promises.addEntryIfManaged(
-          projectId,
-          'accept-invite', // this event logs managedSubscriptionId when available
-          userId,
-          '0:0:0:0'
-        )
-        expect(ctx.createEntryMock).to.have.been.calledOnceWith({
-          operation: 'accept-invite',
-          projectId,
-          initiatorId: userId,
-          ipAddress: '0:0:0:0',
-          info: {},
-          managedSubscriptionId: subscriptionId.toString(),
-        })
-      })
 
       it('does not add an entry in the DB when the event is not of interest of managed groups ', async function (ctx) {
         await ctx.ProjectAuditLogHandler.promises.addEntryIfManaged(
@@ -169,27 +117,5 @@ describe('ProjectAuditLogHandler', function (ctx) {
       })
     })
 
-    it('adds multiple entries when the log involves multiple group subscriptions', async function (ctx) {
-      ctx.getUniqueManagedSubscriptionMemberOfMock.onFirstCall().resolves({
-        _id: subscriptionId,
-      })
-      ctx.getUniqueManagedSubscriptionMemberOfMock.onSecondCall().resolves({
-        _id: subscriptionId2,
-      })
-      await ctx.ProjectAuditLogHandler.promises.addEntryIfManaged(
-        projectId,
-        'transfer-ownership',
-        userId,
-        '0:0:0:0',
-        { previousOwnerId, newOwnerId }
-      )
-      expect(ctx.createEntryMock).to.have.been.calledTwice
-      expect(ctx.createEntryMock).to.have.been.calledWithMatch({
-        managedSubscriptionId: subscriptionId.toString(),
-      })
-      expect(ctx.createEntryMock).to.have.been.calledWithMatch({
-        managedSubscriptionId: subscriptionId2.toString(),
-      })
-    })
   })
 })

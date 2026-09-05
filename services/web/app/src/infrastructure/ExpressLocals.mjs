@@ -483,7 +483,6 @@ export default async function (webRouter, privateApiRouter, publicApiRouter) {
       sentryRelease: Settings.sentry.release,
       hotjarId: Settings.hotjar?.id,
       hotjarVersion: Settings.hotjar?.version,
-      enableSubscriptions: Settings.enableSubscriptions,
       gaToken:
         Settings.analytics &&
         Settings.analytics.ga &&

@@ -1,7 +1,5 @@
 import { callbackify } from 'node:util'
 import UserGetter from '../User/UserGetter.mjs'
-import UserMembershipsHandler from '../UserMembership/UserMembershipsHandler.mjs'
-import UserMembershipEntityConfigs from '../UserMembership/UserMembershipEntityConfigs.mjs'
 
 // The affiliation getters below all derive from UserGetter.getUserFullEmails
 // and differ only in filter strictness. Terms used in their names:
@@ -118,18 +116,8 @@ async function getConfirmedAffiliations(userId) {
   return confirmedAffiliations
 }
 
-/**
- * Institutions the user administers (via user memberships), not their email
- * affiliations.
- * @param {string} userId
- * @returns {Promise<object[]>} managed institution entities
- */
-async function getManagedInstitutions(userId) {
-  return await UserMembershipsHandler.promises.getEntitiesByUser(
-    UserMembershipEntityConfigs.institution,
-    userId
-  )
-}
+// OlliTeX fork (free-only): getManagedInstitutions (SaaS group memberships)
+// removed with the UserMembership feature.
 
 const InstitutionsGetter = {
   getConfirmedAffiliations: callbackify(getConfirmedAffiliations),
@@ -137,7 +125,6 @@ const InstitutionsGetter = {
   getCurrentInstitutionsWithLicence: callbackify(
     getCurrentInstitutionsWithLicence
   ),
-  getManagedInstitutions: callbackify(getManagedInstitutions),
 }
 
 InstitutionsGetter.promises = {
@@ -146,7 +133,6 @@ InstitutionsGetter.promises = {
   getCurrentInstitutionIds,
   getCurrentInstitutionsWithLicence,
   getCurrentAndPastAffiliationIds,
-  getManagedInstitutions,
 }
 
 export default InstitutionsGetter

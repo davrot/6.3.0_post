@@ -1,4 +1,3 @@
-import UserHandler from './UserHandler.mjs'
 import UserDeleter from './UserDeleter.mjs'
 import UserGetter from './UserGetter.mjs'
 import { User } from '../../models/User.mjs'
@@ -598,12 +597,6 @@ async function updateUserSettings(req, res, next) {
       first_name: user.first_name,
       last_name: user.last_name,
     })
-
-    try {
-      await UserHandler.promises.populateTeamInvites(user)
-    } catch (err) {
-      logger.error({ err }, 'error populateTeamInvites')
-    }
 
     res.sendStatus(200)
   }

@@ -108,6 +108,10 @@ describe('TemplatesManager', function () {
 
     vi.doMock('@overleaf/settings', () => ({
       default: {
+        mongo: {
+          url: 'mongodb://127.0.0.1:27017/ollitex_unit_test',
+          options: {},
+        },
         path: {
           dumpFolder: ctx.dumpFolder,
         },
@@ -119,6 +123,9 @@ describe('TemplatesManager', function () {
             user: 'overleaf',
             pass: 'password',
             timeout: 10,
+          },
+          filestore: {
+            url: 'http://127.0.0.1:8080',
           },
         },
         overleaf: {
@@ -169,9 +176,9 @@ describe('TemplatesManager', function () {
         )
       })
 
-      it('should fetch zip from v1 based on template id', function (ctx) {
+      it('should fetch the template zip from the filestore', function (ctx) {
         ctx.FetchUtils.fetchStreamWithResponse.should.have.been.calledWith(
-          `${ctx.v1Url}/api/v1/overleaf/templates/${ctx.templateVersionId}`
+          'http://127.0.0.1:8080/template/template-id/v/template-version-id/zip'
         )
       })
 
@@ -185,8 +192,6 @@ describe('TemplatesManager', function () {
           ctx.templateName,
           ctx.dumpPath,
           {
-            fromV1TemplateId: ctx.templateId,
-            fromV1TemplateVersionId: ctx.templateVersionId,
             compiler: ctx.compiler,
             imageName: ctx.imageName,
             brandVariationId: ctx.brandVariationId,
@@ -226,10 +231,8 @@ describe('TemplatesManager', function () {
           ctx.templateName,
           ctx.dumpPath,
           {
-            fromV1TemplateId: ctx.templateId,
-            fromV1TemplateVersionId: ctx.templateVersionId,
             compiler: 'pdflatex',
-            imageName: 'wl_texlive:2018.1',
+            imageName: null,
           }
         )
       })
