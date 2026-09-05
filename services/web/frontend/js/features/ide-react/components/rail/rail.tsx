@@ -24,6 +24,7 @@ import { useCommandProvider } from '@/features/ide-react/hooks/use-command-provi
 import RailHelpDropdown from './rail-help-dropdown'
 import RailTab from './rail-tab'
 import RailActionElement, { RailAction } from './rail-action-element'
+import { RailAccountMenu } from './rail-account-menu'
 import { RailElement } from '@/features/ide-react/util/rail-types'
 import RailPanel from './rail-panel'
 import RailResizeHandle from './rail-resize-handle'
@@ -170,8 +171,16 @@ export const RailLayout = () => {
           setSettingsShown(true)
         },
       },
+      // 2026-09-09 (owner R10 #4): account menu below the Settings rail
+      // button (the editor page has no sidebar account dropdown).
+      {
+        key: 'account',
+        icon: 'person',
+        title: t('nav.accountSettings', 'Account'),
+        dropdown: <RailAccountMenu />,
+      },
     ],
-    [setSettingsShown, t, sendEvent]
+    [setSettingsShown, t, sendEvent, moduleRailActions]
   )
 
   useCommandProvider(

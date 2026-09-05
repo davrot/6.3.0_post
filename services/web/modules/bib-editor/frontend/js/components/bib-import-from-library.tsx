@@ -223,42 +223,48 @@ export default function BibImportFromLibrary({
                       className="bibtex-import-preview-card"
                       data-conflict={conflict ? 'true' : undefined}
                     >
-                      <div className="bibtex-import-preview-card-check">
-                        <input
-                          type="checkbox"
-                          aria-label={row.entry.id || t('Untitled')}
-                          checked={checked}
-                          disabled={conflict}
-                          onChange={() => toggleRow(row.rowId)}
-                        />
-                      </div>
-                      <div className="bibtex-import-preview-card-content">
+                      {/* overleaf-lab (2026-09-04, owner #2 re-do): the checkbox and
+                          the citation key share ONE flex row — aligned by
+                          construction for every card, no matter how many detail
+                          lines follow below. The old layout nested the key deep
+                          in the content column, so a top-level checkbox could
+                          never line up with it. */}
+                      <div className="bibtex-import-preview-card-top">
+                        <div className="bibtex-import-preview-card-check">
+                          <input
+                            type="checkbox"
+                            aria-label={row.entry.id || t('Untitled')}
+                            checked={checked}
+                            disabled={conflict}
+                            onChange={() => toggleRow(row.rowId)}
+                          />
+                        </div>
                         <div className="bibtex-import-preview-card-key">
                           {row.entry.id || t('Untitled')}
                         </div>
-                        <div className="bibtex-import-preview-card-details">
-                          <div className="bibtex-import-preview-card-heading">
-                            {humanizeCitationHeading(row.entry.id, row.entry.fields)}
+                      </div>
+                      <div className="bibtex-import-preview-card-details">
+                        <div className="bibtex-import-preview-card-heading">
+                          {humanizeCitationHeading(row.entry.id, row.entry.fields)}
+                        </div>
+                        {publicationTitle(row.entry) && (
+                          <div className="bibtex-import-preview-card-title">
+                            {publicationTitle(row.entry)}
                           </div>
-                          {publicationTitle(row.entry) && (
-                            <div className="bibtex-import-preview-card-title">
-                              {publicationTitle(row.entry)}
-                            </div>
-                          )}
-                          {conflict && (
-                            <div className="bibtex-import-preview-card-conflict">
-                              {t('Key already exists in the file')}
-                            </div>
-                          )}
-                        </div>
-                        <div className="bibtex-import-preview-card-tags">
-                          {publicationName(row.entry) && (
-                            <span className="bib-publication-name">
-                              {publicationName(row.entry)}
-                            </span>
-                          )}
-                          <span className="bib-type-tag">{row.entry.type}</span>
-                        </div>
+                        )}
+                        {conflict && (
+                          <div className="bibtex-import-preview-card-conflict">
+                            {t('Key already exists in the file')}
+                          </div>
+                        )}
+                      </div>
+                      <div className="bibtex-import-preview-card-tags">
+                        {publicationName(row.entry) && (
+                          <span className="bib-publication-name">
+                            {publicationName(row.entry)}
+                          </span>
+                        )}
+                        <span className="bib-type-tag">{row.entry.type}</span>
                       </div>
                     </div>
                   )

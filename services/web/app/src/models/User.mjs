@@ -119,6 +119,10 @@ export const UserSchema = new Schema(
       referencesSearchMode: { type: String, default: 'advanced' }, // 'advanced' or 'simple'
       darkModePdf: { type: Boolean, default: false },
       floatingMenu: { type: Boolean, default: true },
+      // 2026-09-09 (owner R9 #4): custom keybindings — command id →
+      // CodeMirror key string (e.g. "Mod-Shift-K"); '' = cleared binding.
+      // Map (of: String) — mongoose strict mode keeps modelled paths intact.
+      customKeybindings: { type: Map, of: String, default: {} },
       zotero: refProviderSettingsSchema,
       mendeley: refProviderSettingsSchema,
       papers: refProviderSettingsSchema,
@@ -294,6 +298,18 @@ export const UserSchema = new Schema(
     // LLM Model"): model id or `u:<rowId>:<model>`; '' = deployment default.
     // Written by LLMSettingsController.saveSelectedModel (module:llm).
     llmSelectedModel: { type: String, default: '' },
+    // overleaf-lab (grammar port): per-user grammar-check preference read/written
+    // by LLMSettingsController.getGrammarSettings / saveGrammarSettings
+    // (GET/POST /user/llm-settings/grammar). MUST be in the schema: strict mode
+    // strips unmodeled paths from $set, so without this the saved mode never
+    // persisted, GET always reported 'default', and the CM6 grammar extension
+    // (gated on mode != 'default') never activated in the editor.
+    grammar: {
+      mode: { type: String, default: 'default' },
+      llmModel: { type: String, default: '' },
+      language: { type: String, default: 'auto' },
+      blockedRules: { type: [String], default: [] },
+    },
   },
   { minimize: false }
 )

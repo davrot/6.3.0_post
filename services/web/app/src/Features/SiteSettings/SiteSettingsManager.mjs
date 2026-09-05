@@ -96,6 +96,9 @@ export const SECRET_FIELDS = {
   // R9 (2026-08-29): six new admin-managed sections.
   'github-sync': ['clientSecret'],
   email: ['pass', 'sesSecret'],
+  // 2026-09-04 (owner #10): WebDAV / Dropbox service secrets, admin-managed.
+  webdav: ['cipherPassword', 'previousCipherPassword'],
+  dropbox: ['appSecret'],
 }
 
 let _cache = { at: 0, doc: undefined }
@@ -141,7 +144,7 @@ function loadDoc() {
 // carries derived "<field>Set" flags) back into a PUT does not 422 on
 // "unknown key" (live bug, sso-reenable probe).
 export const SECTION_KNOWN_KEYS = {
-  templates: ['enabled', 'categories', 'allUsersCanManageTemplates'],
+  templates: ['enabled', 'categories', 'allUsersCanManageTemplates', 'nonAdminCanPublishTemplates'],
   zotero: ['enabled', 'clientKey', 'clientSecret'],
   externalUrl: ['enabled', 'blockedNetworks', 'allowedResourcesRegex'],
   signup: ['enabled', 'allowedEmailDomains', 'disabledRedirectUrl'],
@@ -195,6 +198,7 @@ export const SECTION_KNOWN_KEYS = {
     'defaultImage',
     'images',
     'names',
+    'compileBodySizeLimitMb',
   ],
   'git-integration': ['enabled', 'host', 'port'],
   'github-sync': [
@@ -216,9 +220,25 @@ export const SECTION_KNOWN_KEYS = {
     'skipConfirmation',
     'sesRegion',
     'sesSecret',
+    'adminEmail',
+    'customFooter',
   ],
   'linked-file-types': ['enabledTypes'],
   pandoc: ['enabled', 'image'],
+  // 2026-09-04 (owner #10): WebDAV service (token-cipher credentials are
+  // secrets) + Dropbox app credentials.
+  webdav: [
+    'enabled',
+    'rootPath',
+    'requestTimeoutMs',
+    'retryCount',
+    'retryDelayMs',
+    'cipherLabel',
+    'cipherPassword',
+    'previousCipherLabel',
+    'previousCipherPassword',
+  ],
+  dropbox: ['enabled', 'appKey', 'appSecret'],
   misc: [
     'appName',
     'navHidePoweredBy',
@@ -234,6 +254,25 @@ export const SECTION_KNOWN_KEYS = {
     'maxUploadSizeMiB',
     'maxEntitiesPerProject',
     'defaultLatexCompiler',
+    'projectChangeNotificationDelayMs',
+  ],
+  // 2026-09-09 (owner R10 #3): admin/site sections replacing compose env
+  languagetool: ['enabled', 'url'],
+  llm: [
+    'enabled',
+    'allowUserSettings',
+    'userRatePerMinute',
+    'adminRatePerMinute',
+    'userDailyTokens',
+  ],
+  branding: ['navTitle', 'leftFooter', 'rightFooter'],
+  services: [
+    'v1HistoryUrl',
+    'githubInterfaceUrl',
+    'githubInterfaceWorkdirRoot',
+    'webdavInterfaceUrl',
+    'dropboxInterfaceUrl',
+    'dataManipulatorUrl',
   ],
 }
 
@@ -546,6 +585,34 @@ function envSeeds(env, coreSettings, stored) {
     pandoc: {
       enabled: boolFromEnv(env.ENABLE_PANDOC_CONVERSIONS) === true,
       image: env.PANDOC_IMAGE || 'pandoc-ol:3.10.0.0',
+    },
+    // 2026-09-04 (owner #10): seed WebDAV/DropBox from compose env so an
+    // admin can take over via /admin/site (stored values win at boot).
+    webdav: {
+      enabled: boolFromEnv(env.WEBDAV_ENABLED) === true,
+      rootPath: env.WEBDAV_ROOT_PATH || '/Overleaf',
+      requestTimeoutMs:
+        Number(env.WEBDAV_REQUEST_TIMEOUT_MS) > 0
+          ? Number(env.WEBDAV_REQUEST_TIMEOUT_MS)
+          : 60000,
+      retryCount:
+        Number.isInteger(Number(env.WEBDAV_RETRY_COUNT))
+          ? Number(env.WEBDAV_RETRY_COUNT)
+          : 2,
+      retryDelayMs:
+        Number.isInteger(Number(env.WEBDAV_RETRY_DELAY_MS))
+          ? Number(env.WEBDAV_RETRY_DELAY_MS)
+          : 500,
+      cipherLabel: env.WEBDAV_TOKEN_CIPHER_LABEL || '',
+      cipherPassword: env.WEBDAV_TOKEN_CIPHER_PASSWORD || '',
+      previousCipherLabel: env.WEBDAV_TOKEN_CIPHER_PREVIOUS_LABEL || '',
+      previousCipherPassword:
+        env.WEBDAV_TOKEN_CIPHER_PREVIOUS_PASSWORD || '',
+    },
+    dropbox: {
+      enabled: boolFromEnv(env.DROPBOX_ENABLED) === true,
+      appKey: env.DROPBOX_APP_KEY || '',
+      appSecret: env.DROPBOX_APP_SECRET || '',
     },
     // Miscellaneous (2026-09-01): remaining toolkit/env differences surfaced
     // in /admin/site (see TOOLKIT_ENV_GAP.md). Seeds mirror settings.defaults.
@@ -1060,6 +1127,8 @@ export function validateMiscSection(value) {
     userHardDeletionDelayDays: 1,
     maxUploadSizeMiB: 1,
     maxEntitiesPerProject: 1,
+    // 2026-09-09 (owner R10 #3): notification delay (ms)
+    projectChangeNotificationDelayMs: 0,
   }
   for (const f of Object.keys(intMin)) {
     if (value[f] !== undefined &&
@@ -1081,6 +1150,96 @@ export function validateMiscSection(value) {
   return errors
 }
 
+export function validateWebdavSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  if (typeof value.enabled !== 'boolean') errors.push('enabled must be a boolean')
+  if (
+    value.rootPath !== undefined &&
+    (typeof value.rootPath !== 'string' ||
+     value.rootPath.length === 0 ||
+     !value.rootPath.startsWith('/'))
+  ) {
+    errors.push('rootPath must be an absolute path')
+  }
+  for (const f of ['requestTimeoutMs', 'retryCount', 'retryDelayMs']) {
+    if (value[f] !== undefined && (!Number.isInteger(value[f]) || value[f] < 0)) {
+      errors.push(`${f} must be an integer >= 0`)
+    }
+  }
+  return errors
+}
+
+export function validateDropboxSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  if (typeof value.enabled !== 'boolean') errors.push('enabled must be a boolean')
+  if (value.enabled) {
+    if (typeof value.appKey !== 'string' || value.appKey.length === 0) {
+      errors.push('appKey is required to enable Dropbox')
+    }
+    if (value.appSecret !== undefined && value.appSecret !== '' &&
+        typeof value.appSecret !== 'string') {
+      errors.push('appSecret must be a string')
+    }
+  }
+  return errors
+}
+
+/* ------------------------------------------------------------------ */
+/* 2026-09-09 (owner R10 #3): new admin/site sections replacing        */
+/* compose env vars (languagetool / llm instance / branding / services).*/
+/* ------------------------------------------------------------------ */
+
+function checkStrings (value, fields) {
+  const errors = []
+  for (const f of fields) {
+    if (value[f] !== undefined && typeof value[f] !== 'string') {
+      errors.push(`${f} must be a string`)
+    }
+  }
+  return errors
+}
+
+export function validateLanguagetoolSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') errors.push('enabled must be a boolean')
+  if (value.url !== undefined && typeof value.url !== 'string') errors.push('url must be a string')
+  return errors
+}
+
+export function validateLlmSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  for (const f of ['enabled', 'allowUserSettings']) {
+    if (value[f] !== undefined && typeof value[f] !== 'boolean') errors.push(`${f} must be a boolean`)
+  }
+  for (const f of ['userRatePerMinute', 'adminRatePerMinute', 'userDailyTokens']) {
+    if (value[f] !== undefined && (!Number.isInteger(value[f]) || value[f] < 0)) {
+      errors.push(`${f} must be an integer >= 0`)
+    }
+  }
+  return errors
+}
+
+export function validateBrandingSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  errors.push(...checkStrings(value, ['navTitle', 'leftFooter', 'rightFooter']))
+  return errors
+}
+
+export function validateServicesSection(value) {
+  const errors = []
+  if (typeof value !== 'object' || value === null) return ['body must be a JSON object']
+  errors.push(...checkStrings(value, [
+    'v1HistoryUrl', 'githubInterfaceUrl', 'githubInterfaceWorkdirRoot',
+    'webdavInterfaceUrl', 'dropboxInterfaceUrl', 'dataManipulatorUrl',
+  ]))
+  return errors
+}
+
 export const SECTION_VALIDATORS = {
   templates: validateTemplatesSection,
   zotero: validateZoteroSection,
@@ -1095,5 +1254,12 @@ export const SECTION_VALIDATORS = {
   email: validateEmailSection,
   'linked-file-types': validateLinkedFileTypesSection,
   pandoc: validatePandocSection,
+  webdav: validateWebdavSection,
+  dropbox: validateDropboxSection,
   misc: validateMiscSection,
+  // 2026-09-09 (owner R10 #3): new sections
+  languagetool: validateLanguagetoolSection,
+  llm: validateLlmSection,
+  branding: validateBrandingSection,
+  services: validateServicesSection,
 }

@@ -33,4 +33,7 @@ export type UserSettings = {
   zotero: RefProviderSettings
   mendeley: RefProviderSettings
   papers: RefProviderSettings
+  // 2026-09-09 (owner R9 #4): custom keybindings — command id → CodeMirror
+  // key string (e.g. "Mod-Shift-K"); null/'' = binding cleared.
+  customKeybindings?: Record<string, string | null>
 }

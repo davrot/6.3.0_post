@@ -950,7 +950,11 @@ async function grammar(req, res) {
     try {
         const messages = buildGrammarMessages(clean.spans)
         const { text, usage } = await chatText(spec, messages, {
-            maxOutputTokens: Math.min(4096, Math.max(512, Math.ceil(clean.totalChars / 2))),
+            // 2026-09-09 (R10 #2, live): one suggestion per bad span ≈ 60
+            // tokens; the old ceil(chars/2) budget truncated the array mid-
+            // JSON for typical documents, losing everything. Budget per
+            // span, capped (provider context limits still apply).
+            maxOutputTokens: Math.min(8192, Math.max(512, clean.spans.length * 140)),
             temperature: 0,
             timeoutMs: 120000,
             usageMeta: { userId, action: 'grammar', lane, projectId } // overleaf-lab (usage meter)
@@ -961,6 +965,9 @@ async function grammar(req, res) {
             { projectId, lane, model, duration: `${Date.now() - started}ms`, suggestionCount: suggestions.length },
             '[LLM] grammar: ok'
         )
+        if (suggestions.length === 0) {
+            logger.info({ raw: String(text || '').slice(0, 800) }, '[LLM] grammar: zero suggestions — model reply')
+        }
         res.json({ success: true, suggestions })
     } catch (err) {
         return sendError(res, err, 502)

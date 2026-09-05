@@ -47,6 +47,26 @@ from [here](https://github.com/ayaka-notes/overleaf-pro/commit/06a30fe9a0ed75e5a
 
 The Sign Up page is based on [this code](https://github.com/ayaka-notes/overleaf-pro/tree/feat-public-registeration).
 
+## Instance statistics
+
+The instance statistics feature is based on work from [Isaac Alonso](https://github.com/isaac-aa) (isaac-aa).
+
+## LLM features
+
+The LLM features (AI assistant, compliance review, LLM grammar checking, BYO provider
+management) were developed with AI coding assistants: mainly the **pi coding agent**
+(using the **qwen3.8-27b** model), and VS Code **Copilot** with Claude, OpenAI and
+Raptor Mini models.
+
+[Alessandro Lotti](https://github.com/alelotti96) (alelotti96) worked on part of the LLM work.
+
+## Inspiration
+
+The local-first, self-hosted approach to LaTeX editing was inspired by
+[texlyre](https://github.com/texlyre/texlyre) — a local-first LaTeX & Typst web editor
+with real-time collaboration and offline support, by
+[Fares Abawi](https://github.com/fabawi) (fabawi).
+
 # Acknowledgments
 
 Thanks to the users of the project for valuable feedback, suggestions,

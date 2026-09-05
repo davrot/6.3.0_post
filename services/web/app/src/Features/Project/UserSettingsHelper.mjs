@@ -68,6 +68,11 @@ async function buildUserSettings(_req, _res, user) {
     referencesSearchMode: user.ace.referencesSearchMode,
     darkModePdf: user.ace.darkModePdf ?? false,
     floatingMenu: user.ace.floatingMenu ?? true,
+    // 2026-09-09 (owner R9 #4): custom keybindings (command id → key string;
+    // '' = cleared). Map → plain object for the frontend.
+    customKeybindings: user.ace.customKeybindings
+      ? Object.fromEntries(user.ace.customKeybindings)
+      : {},
     zotero: buildRefProviderSettings(user.ace.zotero),
     mendeley: buildRefProviderSettings(user.ace.mendeley),
     papers: buildRefProviderSettings(user.ace.papers),

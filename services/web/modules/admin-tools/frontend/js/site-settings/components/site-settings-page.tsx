@@ -57,7 +57,13 @@ import {
   EmailTab,
   LinkedFileTypesTab,
   MiscTab,
-  PandocTab
+  PandocTab,
+  WebdavTab,
+  DropboxTab,
+  LanguagetoolTab,
+  LlmInstanceTab,
+  BrandingTab,
+  ServicesTab
 } from './r9-settings-tabs'
 
 type TemplateCategory = {
@@ -103,6 +109,11 @@ type SiteSettings = {
     bindCredentialsSet?: boolean
     [key: string]: unknown
   }
+  // 2026-09-09 (owner R10 #3): new sections (compose env → admin/site)
+  languagetool: { [key: string]: unknown }
+  llm: { [key: string]: unknown }
+  branding: { [key: string]: unknown }
+  services: { [key: string]: unknown }
   misc: { [key: string]: unknown }
 }
 
@@ -111,6 +122,9 @@ type Section =
   | 'ssoSaml' | 'ssoOidc' | 'ssoLdap'
   | 'sandboxedCompiles' | 'gitIntegration' | 'githubSync'
   | 'email' | 'linkedFileTypes' | 'pandoc'
+  | 'webdav' | 'dropbox'
+  // 2026-09-09 (owner R10 #3): new sections
+  | 'languagetool' | 'llm' | 'branding' | 'services'
   | 'misc'
 
 const SECTIONS: { id: Section; labelKey: string }[] = [
@@ -127,6 +141,13 @@ const SECTIONS: { id: Section; labelKey: string }[] = [
   { id: 'email', labelKey: 'adminSite.email' },
   { id: 'linkedFileTypes', labelKey: 'adminSite.linkedFileTypes' },
   { id: 'pandoc', labelKey: 'adminSite.pandoc' },
+  { id: 'webdav', labelKey: 'adminSite.webdav' },
+  { id: 'dropbox', labelKey: 'adminSite.dropbox' },
+  // 2026-09-09 (owner R10 #3): new sections
+  { id: 'languagetool', labelKey: 'adminSite.languagetool' },
+  { id: 'llm', labelKey: 'adminSite.llmInstance' },
+  { id: 'branding', labelKey: 'adminSite.branding' },
+  { id: 'services', labelKey: 'adminSite.services' },
   { id: 'misc', labelKey: 'adminSite.miscellaneous' },
 ]
 
@@ -352,6 +373,43 @@ export default function SiteSettingsPage() {
                           initial={settings.pandoc ?? { enabled: false, image: 'pandoc-ol:3.10.0.0' }}
                         />
                       )}
+                      {active === 'webdav' && (
+                        <WebdavTab
+                          key={`wd-${settings.webdav?.enabled}`}
+                          initial={settings.webdav ?? { enabled: false, rootPath: '/Overleaf', requestTimeoutMs: 60000, retryCount: 2, retryDelayMs: 500 }}
+                        />
+                      )}
+                      {active === 'dropbox' && (
+                        <DropboxTab
+                          key={`db-${settings.dropbox?.enabled}`}
+                          initial={settings.dropbox ?? { enabled: false }}
+                        />
+                      )}
+                      {/* 2026-09-09 (owner R10 #3): new sections */}
+                      {active === 'languagetool' && (
+                        <LanguagetoolTab
+                          key={`lt-${settings.languagetool?.enabled}`}
+                          initial={settings.languagetool ?? { enabled: true, url: '' }}
+                        />
+                      )}
+                      {active === 'llm' && (
+                        <LlmInstanceTab
+                          key={`llm-${settings.llm?.enabled}`}
+                          initial={settings.llm ?? { enabled: true }}
+                        />
+                      )}
+                      {active === 'branding' && (
+                        <BrandingTab
+                          key={`br-${settings.branding?.navTitle}`}
+                          initial={settings.branding ?? {}}
+                        />
+                      )}
+                      {active === 'services' && (
+                        <ServicesTab
+                          key={`svc-${settings.services?.v1HistoryUrl}`}
+                          initial={settings.services ?? {}}
+                        />
+                      )}
                       {active === 'misc' && (
                         <MiscTab
                           key={`misc-${settings.misc?.appName}`}
@@ -484,6 +542,8 @@ function TemplatesTab({
   const [enabled, setEnabled] = useState(initial.enabled)
   const [categories, setCategories] = useState<TemplateCategory[]>(initial.categories)
   const [allUsersAdmin, setAllUsersAdmin] = useState(Boolean(initial.allUsersCanManageTemplates))
+  // 2026-09-09 (owner R10 #3): was compose OVERLEAF_NON_ADMIN_CAN_PUBLISH_TEMPLATES
+  const [nonAdminPublish, setNonAdminPublish] = useState(Boolean(initial.nonAdminCanPublishTemplates))
   const [editKey, setEditKey] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState<{ name: string; description: string }>({
     name: '',
@@ -521,6 +581,13 @@ function TemplatesTab({
             label={<><strong>{t('adminSite.allUsersTemplateAdmins')}</strong></>}
           />
           <Hint>{t('adminSite.allUsersTemplateAdminsHelper')}</Hint>
+          <Switch
+            id="tpl-nonadmin-publish"
+            checked={nonAdminPublish}
+            onChange={setNonAdminPublish}
+            label={<><strong>{t('adminSite.tplNonAdminPublish')}</strong></>}
+          />
+          <Hint>{t('adminSite.tplNonAdminPublishHelper')}</Hint>
         </div>
       </div>
       <SectionTitle>{t('adminSite.tplCategories')}</SectionTitle>
@@ -608,8 +675,8 @@ function TemplatesTab({
         flash={flash}
         saving={saving}
         onSave={() => {
-          void save({ enabled, categories, allUsersCanManageTemplates: allUsersAdmin }).then(ok => {
-            if (ok) onApplied({ enabled, categories, allUsersCanManageTemplates: allUsersAdmin })
+          void save({ enabled, categories, allUsersCanManageTemplates: allUsersAdmin, nonAdminCanPublishTemplates: nonAdminPublish }).then(ok => {
+            if (ok) onApplied({ enabled, categories, allUsersCanManageTemplates: allUsersAdmin, nonAdminCanPublishTemplates: nonAdminPublish })
           })
         }}
       />

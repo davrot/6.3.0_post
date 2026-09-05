@@ -412,6 +412,8 @@ const updateUserSettingsSchema = z.object({
     referencesSearchMode: z.string().optional(),
     darkModePdf: z.coerce.boolean().optional(),
     floatingMenu: z.coerce.boolean().optional(),
+    // 2026-09-09 (owner R9 #4): custom keybindings — { commandId: keyString | null }
+    customKeybindings: z.record(z.union([z.string(), z.null()])).nullish(),
     zotero: refProviderSettingsSchema,
     mendeley: refProviderSettingsSchema,
     papers: refProviderSettingsSchema,
@@ -519,6 +521,21 @@ async function updateUserSettings(req, res, next) {
   }
   if (body.floatingMenu != null) {
     user.ace.floatingMenu = Boolean(body.floatingMenu)
+  }
+  // 2026-09-09 (owner R9 #4): custom keybindings — null/'' = cleared binding.
+  if (body.customKeybindings != null) {
+    const entries = Object.entries(body.customKeybindings)
+      .slice(0, 64)
+      .filter(
+        ([k, v]) =>
+          typeof k === 'string' &&
+          k.length > 0 &&
+          (v === null ||
+            (typeof v === 'string' && v.length > 0 && v.length <= 24))
+      )
+    user.ace.customKeybindings = new Map(
+      entries.map(([k, v]) => [k, v === null ? '' : v])
+    )
   }
   if (body.zotero != null) {
     user.ace.zotero = { ...user.ace.zotero, ...body.zotero }

@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import getMeta from '../../../utils/meta'
-import AccountInfoSection from './account-info-section'
 import ManagedAccountAlert from './managed-account-alert'
+import AccountInfoSection from './account-info-section'
 import PasswordSection from './password-section'
 import LinkingSection from './linking-section'
 import BetaProgramSection from './beta-program-section'
@@ -73,20 +73,17 @@ function SettingsPageContent() {
                 card) — removed on owner request; keep the SSO alert visible. */}
             <SSOAlert />
 
+            {/* 2026-09-09 (owner #3/#12): the account info + password block is
+                KEPT (email + password editing); only the duplicated
+                "Update account info" card-header line was removed — the
+                sections carry their own headings (h3) now. */}
             <div
-              id="account-info-settings"
+              id="account-info"
               className="settings-sub-card mb-4"
               style={{ backgroundColor: 'transparent', border: 'none' }}
             >
-              <div className="card-header settings-sub-block-header">
-                <strong>{t('update_account_info')}</strong>
-              </div>
               <AccountInfoSection />
-              <OLRow>
-                <OLCol lg={12}>
-                  <PasswordSection />
-                </OLCol>
-              </OLRow>
+              <PasswordSection />
             </div>
 
             {/* live-07 #5: per-user key bindings (Default / Vim / Emacs — the
@@ -97,9 +94,6 @@ function SettingsPageContent() {
               className="settings-sub-card mb-4"
               style={{ backgroundColor: 'transparent', border: 'none' }}
             >
-              <div className="card-header settings-sub-block-header">
-                <strong>{t('keybindings')}</strong>
-              </div>
               <KeyBindingsCard />
             </div>
             <div
@@ -107,9 +101,6 @@ function SettingsPageContent() {
               className="settings-sub-card mb-4"
               style={{ backgroundColor: 'transparent', border: 'none' }}
             >
-              <div className="card-header settings-sub-block-header">
-                <strong>{t('linked_accounts')}</strong>
-              </div>
               <SSOProvider>
                 <LinkingSection />
               </SSOProvider>
@@ -120,9 +111,6 @@ function SettingsPageContent() {
                 className="settings-sub-card mb-4"
                 style={{ backgroundColor: 'transparent', border: 'none' }}
               >
-                <div className="card-header settings-sub-block-header">
-                  <strong>{t('llm_section_title', 'AI assistant')}</strong>
-                </div>
                 <LLMUserSection />
               </div>
             ) : null}
@@ -131,9 +119,6 @@ function SettingsPageContent() {
               className="settings-sub-card mb-4"
               style={{ backgroundColor: 'transparent', border: 'none' }}
             >
-              <div className="card-header settings-sub-block-header">
-                <strong>{t('sessions_settings')}</strong>
-              </div>
               <SessionsSection />
             </div>
             {isOverleaf ? (
@@ -181,9 +166,6 @@ function SettingsPageContent() {
                 className="settings-sub-card mb-4"
                 style={{ backgroundColor: 'transparent', border: 'none' }}
               >
-                <div className="card-header settings-sub-block-header">
-                  <strong>{t('email_notifications')}</strong>
-                </div>
                 <NotificationsSection />
               </div>
             )}

@@ -1,9 +1,12 @@
 import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import {
   UserSettingsProvider,
   useUserSettingsContext,
 } from '@/shared/context/user-settings-context'
 import { saveUserSettings } from '@/features/ide-settings/utils/api'
+import CustomKeybindingsModal from './custom-keybindings-modal'
+import OLButton from '@/shared/components/ol/ol-button'
 import { UserSettings } from '../../../../../types/user-settings'
 
 const OPTIONS: {
@@ -32,6 +35,7 @@ function KeyBindingsInner() {
   const { userSettings, setUserSettings } = useUserSettingsContext()
   const { t } = useTranslation()
   const mode = userSettings.mode || 'default'
+  const [showCustomModal, setShowCustomModal] = useState(false)
 
   const change = (value: UserSettings['mode']) => {
     setUserSettings({ ...userSettings, mode: value })
@@ -40,6 +44,9 @@ function KeyBindingsInner() {
 
   return (
     <div className="kb-card">
+      {/* 2026-09-09 (owner #12): section carries its OWN heading — the
+          duplicated card-header <strong> was removed from mysettings. */}
+      <h3 id="keybindings-heading" style={{ marginTop: 0 }}>{t('keybindings')}</h3>
       <p className="form-text mb-3">{t('keybindings_help')}</p>
       {OPTIONS.map(option => (
         <div className="form-check mb-2" key={option.value}>
@@ -68,6 +75,28 @@ function KeyBindingsInner() {
         </div>
       ))}
       <p className="form-text mt-3 mb-0">{t('keybindings_applied_note')}<br />{t('keybindings_sublime_note')}</p>
+      {/* 2026-09-09 (owner R9 #4): custom key bindings manager — table of all
+          available bindings with default + current values, per-action
+          rebinding, JSON import/export, reset to Overleaf/Vim/Emacs defaults,
+          Cancel/Apply. */}
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(27,34,44,0.12)' }}>
+        <OLButton
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowCustomModal(s => !s)}
+        >
+          {t('kb_customize_title', 'Customize key bindings…')}
+        </OLButton>
+        <span className="form-text ms-2 d-inline-block">
+          {t(
+            'kb_customize_card_hint',
+            'Rebind individual actions to your own keys (import / export as JSON).'
+          )}
+        </span>
+      </div>
+      {showCustomModal ? (
+        <CustomKeybindingsModal show onClose={() => setShowCustomModal(false)} />
+      ) : null}
     </div>
   )
 }

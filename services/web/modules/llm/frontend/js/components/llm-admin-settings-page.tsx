@@ -173,8 +173,9 @@ export default function LLMAdminSettingsPage() {
     const [reviewSystemPrompt, setReviewSystemPrompt] = useState<string>((getMeta('ol-reviewSystemPrompt') as string) || '')
     const initialActions = (getMeta('ol-askAiActionPrompts') as Record<string, string>) || {}
     const [askAiActionPrompts, setAskAiActionPrompts] = useState<Record<string, string>>(initialActions && typeof initialActions === 'object' ? initialActions : {})
-    // overleaf-lab: keep the Ask AI action templates block collapsed by default
-    const [showActions, setShowActions] = useState(false)
+    // overleaf-lab (2026-09-04, user request): the Ask AI action templates
+    // block is expanded by default (used to start collapsed).
+    const [showActions, setShowActions] = useState(true)
     const [scanStatus, setScanStatus] = useState<string | null>(null)
     const [testStatus, setTestStatus] = useState<string | null>(null)
 
@@ -283,10 +284,18 @@ export default function LLMAdminSettingsPage() {
             })
             if (resp && (resp as any).success) {
                 setLtCheckStatus('success')
+                // overleaf-lab (2026-09-04): build the string in JS — the previous t(key, fallback, {count})
+                // call rendered a literal "{{count}}" (third-arg options were not
+                // interpolated for the bundled string). Keep it dependency-free.
+                const langCount = Number((resp as any).languageCount) || 0
                 setLtCheckMessage(
-                    t('lt_reachable', 'LanguageTool reachable ({{count}} languages)', {
-                        count: (resp as any).languageCount ?? 0,
-                    })
+                    t('lt_reachable_ok', 'LanguageTool reachable (') +
+                    langCount +
+                    ' ' +
+                    (langCount === 1
+                        ? t('lt_lang_one', 'language')
+                        : t('lt_lang_many', 'languages')) +
+                    ')'
                 )
             } else {
                 setLtCheckStatus('error')
@@ -618,25 +627,50 @@ export default function LLMAdminSettingsPage() {
 
                   {allModels.length > 0 && (
                       <>
-                          <div className="ol-llm-admin-settings__model-list">
-                              {allModels.map((model) => (
-                                  <label
-                                      key={model}
-                                      className="ol-llm-admin-settings__model-row"
-                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-light-secondary, #f8f9fa)' }}
-                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '' }}
-                                  >
-                                      <input
-                                          type="checkbox"
-                                          checked={allowedModels.includes(model)}
-                                          onChange={() => toggleAllowedModel(model)}
-                                          className="ol-llm-admin-settings__model-checkbox"
-                                      />
-                                      <span className="ol-llm-admin-settings__mono-lg">
-                                          {model}
-                                      </span>
-                                  </label>
-                              ))}
+                          {/* overleaf-lab (2026-09-04, user request): proper table layout
+                              (Model | Enabled) — the old stacked label list looked squished. */}
+                          <div className="table-responsive ol-llm-admin-settings__model-table-wrap">
+                              <table className="table table-sm align-middle ol-llm-admin-settings__model-table" role="grid">
+                                  <thead>
+                                      <tr>
+                                          <th scope="col">{t('model_col', 'Model')}</th>
+                                          <th scope="col" className="text-end">{t('enabled_col', 'Enabled')}</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      {allModels.map((model) => (
+                                          <tr key={model} className="ol-llm-admin-settings__model-row">
+                                              <td className="ol-llm-admin-settings__mono-cell">
+                                                  <span className="ol-llm-admin-settings__mono-lg">
+                                                      {model}
+                                                  </span>
+                                              </td>
+                                              <td className="text-end">
+                                                  {
+                                                    /* 2026-09-09 (owner R9 #6): exact /admin/site checkbox
+                                                       recipe — .form-check + form-check-input (standard 1em
+                                                       size + border), label kept for a11y. */
+                                                    <>
+                                                      <div className="form-check ol-llm-admin-settings__model-check mx-0">
+                                                          <input
+                                                              type="checkbox"
+                                                              className="form-check-input ol-llm-admin-settings__model-checkbox"
+                                                              id={`model-${model.replace(/[^a-zA-Z0-9_-]/g, '_')}`}
+                                                              aria-label={`Enable ${model}`}
+                                                              checked={allowedModels.includes(model)}
+                                                              onChange={() => toggleAllowedModel(model)}
+                                                          />
+                                                          <label className="visually-hidden" htmlFor={`model-${model.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
+                                                              Enable {model}
+                                                          </label>
+                                                      </div>
+                                                    </>
+                                                  }
+                                              </td>
+                                          </tr>
+                                      ))}
+                                  </tbody>
+                              </table>
                           </div>
                           <div className="ol-llm-admin-settings__models-actions">
                               <OLButton
@@ -926,16 +960,19 @@ export default function LLMAdminSettingsPage() {
                   </p>
 
                   <div className="llm-settings-section-body">
-                      <div className="ol-llm-admin-settings__feature-row">
+                      <div className="form-check ol-llm-admin-settings__feature-row">
                           <input
+                              className="form-check-input ol-llm-admin-settings__feature-check"
                               type="checkbox"
                               id="llm-disabled-by-admin"
                               checked={llmDisabledByAdmin}
                               onChange={e => setLlmDisabledByAdmin(e.target.checked)}
-                              style={{ marginRight: '0.5rem' }}
                           />
-                          <label htmlFor="llm-disabled-by-admin">
-                              {t('llm_disabled_by_admin', 'Disable LLM for all users (force off, even BYO)')}
+                          <label
+                              className="form-check-label ol-llm-admin-settings__feature-label"
+                              htmlFor="llm-disabled-by-admin"
+                          >
+                              <strong>{t('llm_disabled_by_admin', 'Disable LLM for all users (force off, even BYO)')}</strong>
                           </label>
                       </div>
 
@@ -959,16 +996,19 @@ export default function LLMAdminSettingsPage() {
                           </OLFormText>
                       </OLFormGroup>
 
-                      <div className="ol-llm-admin-settings__feature-row">
+                      <div className="form-check ol-llm-admin-settings__feature-row">
                           <input
+                              className="form-check-input ol-llm-admin-settings__feature-check"
                               type="checkbox"
                               id="languagetool-disabled-by-admin"
                               checked={languageToolDisabledByAdmin}
                               onChange={e => setLanguageToolDisabledByAdmin(e.target.checked)}
-                              style={{ marginRight: '0.5rem' }}
                           />
-                          <label htmlFor="languagetool-disabled-by-admin">
-                              {t('languagetool_disabled_by_admin', 'Disable LanguageTool for all users (force off)')}
+                          <label
+                              className="form-check-label ol-llm-admin-settings__feature-label"
+                              htmlFor="languagetool-disabled-by-admin"
+                          >
+                              <strong>{t('languagetool_disabled_by_admin', 'Disable LanguageTool for all users (force off)')}</strong>
                           </label>
                       </div>
 

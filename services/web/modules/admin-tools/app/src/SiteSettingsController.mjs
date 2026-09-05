@@ -56,7 +56,7 @@ export default {
    * templates: per-category template counts.
    */
   getSiteSettings: expressify(async (req, res) => {
-    const [templates, zotero, externalUrl, signup, ssoSaml, ssoOidc, ssoLdap, sandboxedCompiles, gitIntegration, githubSync, email, linkedFileTypes, pandoc, misc] = await Promise.all([
+    const [templates, zotero, externalUrl, signup, ssoSaml, ssoOidc, ssoLdap, sandboxedCompiles, gitIntegration, githubSync, email, linkedFileTypes, pandoc, webdav, dropbox, misc, languagetool, llm, branding, services] = await Promise.all([
       getSection('templates', Settings),
       getSection('zotero', Settings),
       getSection('externalUrl', Settings),
@@ -70,7 +70,14 @@ export default {
       getSection('email', Settings),
       getSection('linked-file-types', Settings),
       getSection('pandoc', Settings),
+      getSection('webdav', Settings),
+      getSection('dropbox', Settings),
       getSection('misc', Settings),
+      // 2026-09-09 (owner R10 #3): new admin/site sections
+      getSection('languagetool', Settings),
+      getSection('llm', Settings),
+      getSection('branding', Settings),
+      getSection('services', Settings),
     ])
 
     // Template counts per category (same source as the gallery).
@@ -103,7 +110,14 @@ export default {
       email: maskSecrets('email', email),
       'linked-file-types': maskSecrets('linked-file-types', linkedFileTypes),
       pandoc: maskSecrets('pandoc', pandoc),
+      webdav: maskSecrets('webdav', webdav),
+      dropbox: maskSecrets('dropbox', dropbox),
       misc: maskSecrets('misc', misc),
+      // 2026-09-09 (owner R10 #3): new admin/site sections
+      languagetool: maskSecrets('languagetool', languagetool),
+      llm: maskSecrets('llm', llm),
+      branding: maskSecrets('branding', branding),
+      services: maskSecrets('services', services),
     })
   }),
 

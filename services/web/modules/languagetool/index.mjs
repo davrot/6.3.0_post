@@ -4,6 +4,12 @@ import {
   readAdminSettings,
   resolveLanguageToolUrl,
 } from './app/src/adminConfig.mjs'
+import { ensureEnvForSection } from '../../app/src/Features/SiteSettings/EnvHydrator.mjs'
+
+// 2026-09-09 (owner R10 #3): LanguageTool URL now lives in admin/site
+// (section `languagetool`); self-hydrate right before resolving the URL.
+await ensureEnvForSection('languagetool')
+await ensureEnvForSection('services')
 
 /**
  * LanguageTool module entry point.

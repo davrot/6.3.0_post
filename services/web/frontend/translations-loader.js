@@ -36,7 +36,21 @@ module.exports = function translationsLoader() {
 
 async function run(locale) {
   const json = await fs.readFile(EXTRACTED_TRANSLATIONS_PATH)
-  const keys = Object.keys(JSON.parse(json))
+  const raw = JSON.parse(json)
+  // 2026-09-04 (owner #11): i18next-scanner writes dotted keys as NESTED
+  // objects ("adminSite": { "templates": "" }) while locales/en.json is FLAT
+  // ("adminSite.templates": "Templates"). The loader iterates top-level keys
+  // only, so nested members were silently dropped from every bundle — the
+  // /admin/site sidebar rendered raw "adminSite.*" keys. Flatten nested
+  // entries back into dotted keys (values are empty strings from the
+  // scanner — the real values come from en.json below).
+  const keys = Object.keys(raw).flatMap(k => {
+    const v = raw[k]
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      return Object.keys(v).map(k2 => `${k}.${k2}`)
+    }
+    return [k]
+  })
 
   const fallbackTranslations = await extract('en', keys)
   return extract(locale, keys, fallbackTranslations)

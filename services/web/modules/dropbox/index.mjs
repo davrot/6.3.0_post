@@ -1,8 +1,22 @@
 import Settings from '@overleaf/settings'
 import Modules from '../../app/src/infrastructure/Modules.mjs'
 import logger from '@overleaf/logger'
+import { ensureEnvForSection } from '../../app/src/Features/SiteSettings/EnvHydrator.mjs'
 
 let DropboxModule = {}
+
+// 2026-09-04: Dropbox is admin-managed via /admin/site (site_settings
+// store). ESM evaluation order does not guarantee the boot hydrator ran
+// before this gate — apply stored dropbox values to env here, then gate.
+try {
+  await ensureEnvForSection('dropbox')
+  // 2026-09-09 (owner R10 #3): interface URLs moved to the `services`
+  // section — the Dropbox client reads its env at construction.
+  await ensureEnvForSection('services')
+} catch (err) {
+  logger.warn({ err }, 'Dropbox module: env hydration from store failed (env defaults stand)')
+}
+
 if (process.env.DROPBOX_ENABLED?.toLowerCase() === 'true') {
   logger.debug({}, 'Enabling Dropbox module')
 

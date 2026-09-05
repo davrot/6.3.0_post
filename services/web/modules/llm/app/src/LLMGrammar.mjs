@@ -1,3 +1,28 @@
+/**
+ * 2026-09-09 (R10 #2, live): salvage a possibly TRUNCATED JSON array of
+ * flat objects (the model hit its max-output budget mid-array). Tries
+ * closing the array at each of the last complete-element boundaries.
+ * Returns an array, or null when nothing salvages.
+ */
+function salvageTruncatedJsonArray (raw) {
+    if (!raw || raw.length < 3) return null
+    const inner = raw.slice(1) // drop the opening bracket
+    // A trailing ']' (present in some truncation shapes) is harmless: the
+    // scan closes the array at element boundaries anyway.
+    for (let i = inner.length - 1; i >= 0; i -= 1) {
+        const ch = inner[i]
+        if (ch !== '}' ) continue
+        const candidate = '[' + inner.slice(0, i + 1).replace(/,\s*$/, '') + ']'
+        try {
+            const parsed = JSON.parse(candidate)
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch (err) {
+            /* keep scanning left */
+        }
+    }
+    return null
+}
+
 /*
  * LLMGrammar - pure helpers for the editor grammar-checking feature
  * (the LLM lane), shared by LLMChatController (POST /project/:id/llm/grammar)
@@ -33,8 +58,8 @@ export const GRAMMAR_SYSTEM_PROMPT = [
     'You are a grammar and style corrector for short prose excerpts taken from a LaTeX document.',
     'You only fix grammar, spelling and wording problems. You never change meaning, LaTeX commands, math, formatting, terminology, or tone.',
     'You MUST reply with a single JSON array and nothing else. Each element is an object:',
-    '{"id": <span id>, "start": <start offset, inclusive>, "end": <end offset, exclusive>, "message": <short explanation>, "suggestion": <corrected replacement for the range start..end>}',
-    'Offsets are zero-based character offsets into the raw span text. Only include spans that actually contain an error. Reply with "[]" when there are no errors.',
+    '{"id": <span id>, "start": <start offset, inclusive>, "end": <end offset, exclusive>, "original": <exact substring being replaced>, "message": <short explanation>, "suggestion": <corrected replacement for the range start..end>}',
+    'Offsets are zero-based character offsets into the raw span text. The "original" field is REQUIRED (it locates the fix when offsets are approximate). Only include spans that actually contain an error. Reply with "[]" when there are no errors.',
 ].join('\n')
 
 /**
@@ -113,19 +138,30 @@ export function parseGrammarSuggestions(content, spans) {
         .trim()
     const start = cleaned.indexOf('[')
     const end = cleaned.lastIndexOf(']')
-    if (start === -1 || end <= start) {
+    if (start === -1) {
         return []
     }
+    // 2026-09-09 (R10 #2, live): the reply is often TRUNCATED by the model's
+    // max-output budget mid-array — sometimes even without the closing ']'.
+    // Candidate = from the first '[' to the last ']' (or end of text when
+    // the closing bracket is missing).
+    const candidate = end > start
+        ? cleaned.slice(start, end + 1)
+        : cleaned.slice(start)
 
     let items
     try {
-        items = JSON.parse(cleaned.slice(start, end + 1))
+        items = JSON.parse(candidate)
     } catch (err) {
-        logger.debug(
-            { content: String(content || '').slice(0, 500) },
-            '[GRAMMAR] Could not parse LLM JSON response'
-        )
-        return []
+        // Salvage: close the array at the last complete element boundary.
+        items = salvageTruncatedJsonArray(candidate)
+        if (items === null) {
+            logger.debug(
+                { content: String(content || '').slice(0, 500) },
+                '[GRAMMAR] Could not parse LLM JSON response'
+            )
+            return []
+        }
     }
 
     if (!Array.isArray(items)) return []
@@ -134,16 +170,47 @@ export function parseGrammarSuggestions(content, spans) {
     for (const item of items) {
         if (!item || typeof item !== 'object') continue
         const span = spansById.get(item.id)
-        if (!span || typeof item.start !== 'number' || typeof item.end !== 'number') {
-            continue
+        if (!span) continue
+        let start = item.start
+        let end = item.end
+        let valid =
+            typeof start === 'number' && typeof end === 'number' &&
+            start >= 0 && end <= span.text.length && end > start
+        // 2026-09-09 (R10 #2, live): small models often return slightly-off
+        // or missing offsets. Fallbacks: (1) locate the item's `original`
+        // substring inside the span text; (2) clamp small offset drift into
+        // the legal range. The suggestion stays usable instead of being
+        // dropped wholesale.
+        if (!valid) {
+            const orig = typeof item.original === 'string' ? item.original
+                : typeof item.text === 'string' ? item.text : ''
+            let found = -1
+            if (orig && orig.trim()) {
+                const hay = span.text.toLowerCase()
+                found = hay.indexOf(orig.toLowerCase())
+                if (found === -1) {
+                    const words = orig.trim().split(/\s+/)
+                    for (let w = Math.min(words.length, 4); w >= 2 && found === -1; w -= 1) {
+                        const head = words.slice(0, w).join(' ')
+                        if (head.length >= 6) found = hay.indexOf(head.toLowerCase())
+                    }
+                }
+                if (found !== -1) {
+                    start = found
+                    end = found + orig.length
+                    valid = true
+                }
+            }
         }
-        if (item.start < 0 || item.end > span.text.length || item.end <= item.start) {
-            continue
+        if (!valid) {
+            if (typeof start !== 'number' || typeof end !== 'number') continue
+            start = Math.max(0, Math.min(Math.round(start), span.text.length - 1))
+            end = Math.min(span.text.length, Math.max(Math.round(end), start + 1))
         }
         suggestions.push({
             spanId: item.id,
-            start: item.start,
-            end: item.end,
+            start: start,
+            end: end,
             message: typeof item.message === 'string' ? item.message : '',
             suggestion: typeof item.suggestion === 'string' ? item.suggestion : '',
         })

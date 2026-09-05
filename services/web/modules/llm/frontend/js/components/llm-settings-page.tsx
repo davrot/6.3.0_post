@@ -64,7 +64,10 @@ export default function LLMSettingsPage() {
                                     'Your own LLM providers and model selection (BYO key). Leave everything off to use the instance configuration only.'
                                 )}
                             </p>
-                            <LLMSettingsSection initialSettings={user.llmSettings} />
+                            {/* compact: the General card already carries the title +
+                                description — the inner "My LLM providers" header would
+                                duplicate it (owner #6b, 2026-09-04). */}
+                            <LLMSettingsSection compact initialSettings={user.llmSettings} />
                         </div>
                     </div>
 

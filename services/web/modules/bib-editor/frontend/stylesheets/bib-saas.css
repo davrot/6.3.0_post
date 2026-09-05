@@ -96,32 +96,23 @@
 :root { --bibtex-already-in-library-color:var(--yellow-50);--bibtex-already-in-library-bg-color:var(--yellow-10) }
 [data-theme=default] .modal-themed { --bibtex-already-in-library-color:var(--yellow-20);--bibtex-already-in-library-bg-color:var(--yellow-70) }
 .bibtex-import-preview-card-check {
-  /* 6.3.0 port (live-06 #2 / live-07 #1, re-done): the checkbox must sit exactly
-     on the SAME row as the citation-key badge. Instead of guessing a line
-     height (the first pass assumed 1.2 — the real inherited body line-height is
-     1.71429), MIRROR the key's box properties: same margin-top (var(--spacing-04)),
-     same font-size (var(--spacing-05)), same vertical padding (var(--spacing-01))
-     and the same inherited line-height. The flex centreing then puts the 16px
-     checkbox box in exactly the same vertical box as the key text — pixel
-     aligned for any future token changes. */
+  /* 6.3.0 port (2026-09-04, owner #2 final pass): the checkbox and the
+     citation-key badge now share ONE flex row (.bibtex-import-preview-card-top)
+     — aligned BY CONSTRUCTION (same flex center line), independent of how many
+     detail lines follow below. Mirroring box geometry across a nested DOM could
+     never be exact; a shared row is. */
   display:flex;
   align-items:center;
-  padding-top:0;
-  padding-bottom:0;
-  padding-left:var(--spacing-01);
-  padding-right:var(--spacing-01);
-  margin-top:var(--spacing-04);
-  font-size:var(--spacing-05);
-  line-height:inherit;
-  flex-shrink:0
+  flex:0 0 auto
 }
-.bibtex-import-preview-card { border:1px solid var(--border-divider-themed);border-radius:var(--border-radius-large);display:flex;gap:var(--spacing-06);padding:var(--spacing-04) var(--spacing-06) }
+.bibtex-import-preview-card-top { align-items:center;display:flex;gap:var(--spacing-04) }
+.bibtex-import-preview-card { border:1px solid var(--border-divider-themed);border-radius:var(--border-radius-large);display:flex;flex-direction:column;gap:var(--spacing-03);padding:var(--spacing-04) var(--spacing-06) }
 .bibtex-import-preview-card-content { display:flex;flex:1;flex-direction:column }
-.bibtex-import-preview-card-details { display:flex;flex-direction:column;gap:var(--spacing-03);padding-top:var(--spacing-04) }
+.bibtex-import-preview-card-details { display:flex;flex-direction:column;gap:var(--spacing-03) }
 .bibtex-import-preview-card-heading { font-weight:600 }
 .bibtex-import-preview-card-field { color:var(--bibtex-card-secondary-text) }
-.bibtex-import-preview-card-tags { display:flex;gap:var(--spacing-06);padding:var(--spacing-04) 0 }
-.bibtex-import-preview-card-key { background-color:var(--bg-tertiary-themed);border-radius:var(--border-radius-base);color:var(--content-primary-themed);font-family:DM Mono,monospace;font-feature-settings:"ss05";font-size:var(--spacing-05);font-weight:500;margin-top:var(--spacing-04);padding:var(--spacing-01) var(--spacing-02);width:-moz-fit-content;width:fit-content }
+.bibtex-import-preview-card-tags { align-items:center;display:flex;gap:var(--spacing-06) }
+.bibtex-import-preview-card-key { background-color:var(--bg-tertiary-themed);border-radius:var(--border-radius-base);color:var(--content-primary-themed);flex:0 1 auto;font-family:DM Mono,monospace;font-feature-settings:"ss05";font-size:var(--spacing-05);font-weight:500;min-width:0;max-width:100%;overflow:hidden;padding:var(--spacing-01) var(--spacing-02);text-overflow:ellipsis;white-space:nowrap }
 .bibtex-already-in-library .badge-tag-content { background-color:var(--bibtex-already-in-library-bg-color);color:var(--bibtex-already-in-library-color);max-width:none }
 .bibtex-import-preview-count { font-weight:600;margin-bottom:var(--spacing-04);padding:var(--spacing-04) 0 }
 .bibtex-import-preview-list { display:flex;flex-direction:column;gap:var(--spacing-04) }

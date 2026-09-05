@@ -1,8 +1,18 @@
 import Settings from '@overleaf/settings'
 import Modules from '../../app/src/infrastructure/Modules.mjs'
 import logger from '@overleaf/logger'
+import { ensureEnvForSection } from '../../app/src/Features/SiteSettings/EnvHydrator.mjs'
 
 let GitHubSyncModule = {}
+// 2026-09-09 (owner R10 #3): robustness + interface URL (services section)
+// — GitServerClient reads GITHUBINTERFACE_API_URL at construction.
+for (const section of ['github-sync', 'services']) {
+  try {
+    await ensureEnvForSection(section)
+  } catch (err) {
+    logger.warn({ err, section }, 'GitHub-Sync module: env hydration from store failed (env defaults stand)')
+  }
+}
 if (process.env.GITHUB_SYNC_ENABLED?.toLowerCase() === 'true' || 
     process.env.GIT_SYNC_ENABLED?.toLowerCase() === 'true') {
   logger.debug({}, 'Enabling Git Sync module')

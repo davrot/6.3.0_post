@@ -1,7 +1,13 @@
 import Settings from '@overleaf/settings'
 import logger from '@overleaf/logger'
+import { ensureEnvForSection } from '../../app/src/Features/SiteSettings/EnvHydrator.mjs'
 
 let LLMModule = {}
+
+// 2026-09-09 (owner R10 #3): LLM instance flags now live in admin/site
+// (section `llm`); self-hydrate right before the gate (ESM order is not
+// reliable — same hardening as webdav/dropbox).
+await ensureEnvForSection('llm')
 
 // LLM module is enabled when LLM_ENABLED env is set or llm.enabled in settings
 const llmEnabled =

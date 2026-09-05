@@ -76,6 +76,10 @@ export function SandboxedCompilesTab (
   const [defaultImage, setDefaultImage] = useState(
     String(initial.defaultImage ?? '')
   )
+  // 2026-09-09 (owner R10 #3): compile body size limit (was compose env)
+  const [bodySizeLimitMb, setBodySizeLimitMb] = useState(
+    String(initial.compileBodySizeLimitMb ?? 50)
+  )
 
   const setRow = (i: number, patch: Partial<ImageRow>) => {
     setImages(rows =>
@@ -92,7 +96,8 @@ export function SandboxedCompilesTab (
       extraFlags,
       imageUser,
       images,
-      defaultImage: defaultImage || (images[0] && images[0].image) || ''
+      defaultImage: defaultImage || (images[0] && images[0].image) || '',
+      compileBodySizeLimitMb: parseInt(bodySizeLimitMb, 10) || 50
     })
   }
 
@@ -115,6 +120,9 @@ export function SandboxedCompilesTab (
       <Two
         a={<Field id="sc-flags" label={t('adminSite.scFlags')} value={extraFlags} onChange={setExtraFlags} placeholder="-shell-escape" />}
         b={<Field id="sc-user" label={t('adminSite.scImageUser')} value={imageUser} onChange={setImageUser} placeholder="www-data" hint={t('adminSite.scImageUserHint')} />}
+      />
+      <Two
+        a={<Field id="sc-bodysize" label={t('adminSite.scBodySizeLimit')} type="number" value={bodySizeLimitMb} onChange={setBodySizeLimitMb} placeholder="50" hint={t('adminSite.scBodySizeHint')} />}
       />
       <SectionTitle top>{t('adminSite.scImages')}</SectionTitle>
       <table className="table table-sm mb-2">
@@ -322,6 +330,9 @@ export function EmailTab ({ initial }: { initial: SectionValue }) {
   const [accessKeyId, setAccessKeyId] = useState(String(initial.accessKeyId ?? ''))
   const [sesSecret, setSesSecret] = useState('')
   const [sesRegion, setSesRegion] = useState(String(initial.sesRegion ?? ''))
+  // 2026-09-09 (owner R10 #3): admin contact + custom footer (was compose env)
+  const [adminEmail, setAdminEmail] = useState(String(initial.adminEmail ?? ''))
+  const [customFooter, setCustomFooter] = useState(String(initial.customFooter ?? ''))
   // UI round 10 item 6: one-off test e-mail (sent through the STORED config).
   const [testTo, setTestTo] = useState('')
   const [testSending, setTestSending] = useState(false)
@@ -362,7 +373,9 @@ export function EmailTab ({ initial }: { initial: SectionValue }) {
       accessKeyId: driver === 'ses' ? accessKeyId : '',
       sesSecret: driver === 'ses' ? sesSecret : '',
       sesRegion: driver === 'ses' ? sesRegion : '',
-      skipConfirmation
+      skipConfirmation,
+      adminEmail,
+      customFooter
     })
   }
 
@@ -387,6 +400,14 @@ export function EmailTab ({ initial }: { initial: SectionValue }) {
         a={<Field id="em-from" label={t('adminSite.emailFrom')} required value={fromAddress} onChange={setFromAddress} placeholder="noreply@example.com" hint={t('adminSite.emailFromHint')} />}
         b={<Field id="em-reply" label={t('adminSite.emailReplyTo')} value={replyTo} onChange={setReplyTo} placeholder="support@example.com" hint={t('adminSite.emailReplyToHint')} />}
       />
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <Field id="em-admin" label={t('adminSite.emailAdmin')} value={adminEmail} onChange={setAdminEmail} placeholder="admin@example.com" hint={t('adminSite.emailAdminHint')} />
+        </div>
+        <div className="col-md-6">
+          <Field id="em-customfooter" label={t('adminSite.emailCustomFooter')} value={customFooter} onChange={setCustomFooter} placeholder="\u00a9 Example University" />
+        </div>
+      </div>
       <SectionTitle top>Email Driver</SectionTitle>
       <div className="row mb-3">
         <div className="col-md-6">
@@ -607,6 +628,110 @@ export function PandocTab ({ initial }: { initial: SectionValue }) {
 }
 
 // ------------------------------------------------------------------------
+// WebDAV (2026-09-04, owner #10) — the WebDAV service configuration
+// (compose env WEBDAV_*) is admin-managed here; stored values hydrate the
+// env at web boot (applies on the next container cycle). API section id:
+// "webdav".
+// ------------------------------------------------------------------------
+export function WebdavTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('webdav')
+  const [enabled, setEnabled] = useState(Boolean(initial.enabled))
+  const [rootPath, setRootPath] = useState(String(initial.rootPath ?? '/Overleaf'))
+  const [timeoutMs, setTimeoutMs] = useState(String(initial.requestTimeoutMs ?? 60000))
+  const [retryCount, setRetryCount] = useState(String(initial.retryCount ?? 2))
+  const [retryDelayMs, setRetryDelayMs] = useState(String(initial.retryDelayMs ?? 500))
+  const [cipherLabel, setCipherLabel] = useState(String(initial.cipherLabel ?? ''))
+  const [cipherPassword, setCipherPassword] = useState('')
+  const advanced = Boolean(initial.cipherLabel)
+  const [showAdvanced, setShowAdvanced] = useState(advanced)
+
+  const ints = {
+    requestTimeoutMs: parseInt(timeoutMs, 10),
+    retryCount: parseInt(retryCount, 10),
+    retryDelayMs: parseInt(retryDelayMs, 10),
+  }
+
+  return (
+    <Card
+      title={t('adminSite.webdav')}
+      enabled={enabled}
+      onEnabled={setEnabled}
+      badge="webdav"
+    >
+      <p className="text-muted">{t('adminSite.webdavDesc')}</p>
+      <Two
+        a={<Field id="wd-root" label={t('adminSite.webdavRootPath')} required value={rootPath} onChange={setRootPath} placeholder="/Overleaf" />}
+        b={<Field id="wd-timeout" label={t('adminSite.webdavTimeout')} type="number" value={timeoutMs} onChange={setTimeoutMs} placeholder="60000" />}
+      />
+      <Two
+        a={<Field id="wd-retries" label={t('adminSite.webdavRetries')} type="number" value={retryCount} onChange={setRetryCount} placeholder="2" />}
+        b={<Field id="wd-delay" label={t('adminSite.webdavRetryDelay')} type="number" value={retryDelayMs} onChange={setRetryDelayMs} placeholder="500" />}
+      />
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary mb-3"
+        onClick={() => setShowAdvanced(a => !a)}
+      >
+        {showAdvanced ? '−' : '+'} {t('adminSite.webdavAdvanced', 'Advanced')}
+      </button>
+      {showAdvanced && (
+        <div className="mb-3">
+          <Two
+            a={<Field id="wd-cipherlabel" label={t('adminSite.webdavCipherLabel')} value={cipherLabel} onChange={setCipherLabel} placeholder="OL_WEBDAV2-v3" />}
+            b={<PasswordField id="wd-cipherpass" label={t('adminSite.webdavCipherPassword')} value={cipherPassword} onChange={setCipherPassword} set={Boolean(initial.cipherPasswordSet)} hint={t('adminSite.webdavCipherHint')} />}
+          />
+        </div>
+      )}
+      <SaveFooter
+        flash={flash}
+        onSave={() =>
+          void save({
+            enabled,
+            rootPath,
+            ...ints,
+            cipherLabel,
+            cipherPassword,
+          })}
+        note={t('adminSite.restartHint')}
+      />
+    </Card>
+  )
+}
+
+// ------------------------------------------------------------------------
+// Dropbox (2026-09-04, owner #10) — app credentials + enable flag, managed
+// here instead of compose env (DROPBOX_*). API section id: "dropbox".
+// ------------------------------------------------------------------------
+export function DropboxTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('dropbox')
+  const [enabled, setEnabled] = useState(Boolean(initial.enabled))
+  const [appKey, setAppKey] = useState(String(initial.appKey ?? ''))
+  const [appSecret, setAppSecret] = useState('')
+
+  return (
+    <Card
+      title={t('adminSite.dropbox')}
+      enabled={enabled}
+      onEnabled={setEnabled}
+      badge="dropbox"
+    >
+      <p className="text-muted">{t('adminSite.dropboxDesc')}</p>
+      <Two
+        a={<Field id="db-key" label={t('adminSite.dropboxAppKey')} required value={appKey} onChange={setAppKey} placeholder="xs8q2ebd8qrmhuu" />}
+        b={<PasswordField id="db-secret" label={t('adminSite.dropboxAppSecret')} value={appSecret} onChange={setAppSecret} set={Boolean(initial.appSecretSet)} hint={t('adminSite.dropboxSecretHint')} />}
+      />
+      <SaveFooter
+        flash={flash}
+        onSave={() => void save({ enabled, appKey, appSecret })}
+        note={t('adminSite.restartHint')}
+      />
+    </Card>
+  )
+}
+
+// ------------------------------------------------------------------------
 // Miscellaneous (2026-09-01) — the remaining toolkit/env differences
 // (branding / access / lifecycle / limits / compile) consolidated into one
 // tab. See TOOLKIT_ENV_GAP.md. API section id: "misc".
@@ -634,6 +759,10 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
   const [maxEntities, setMaxEntities] = useState(String(initial.maxEntitiesPerProject ?? 2000))
   // Compile
   const [compiler, setCompiler] = useState(String(initial.defaultLatexCompiler ?? 'pdflatex'))
+  // 2026-09-09 (owner R10 #3): project-change notification delay (was compose env)
+  const [notifDelay, setNotifDelay] = useState(
+    String(initial.projectChangeNotificationDelayMs ?? 30000)
+  )
 
   const submit = (): void => {
     void save({
@@ -651,6 +780,7 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
       maxUploadSizeMiB: parseInt(maxUpload, 10),
       maxEntitiesPerProject: parseInt(maxEntities, 10),
       defaultLatexCompiler: compiler,
+      projectChangeNotificationDelayMs: parseInt(notifDelay, 10) || 0,
     })
   }
 
@@ -694,6 +824,173 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
       <SectionTitle>{t('adminSite.miscCompile')}</SectionTitle>
       <Two a={<Field id="misc-compiler" label={t('adminSite.miscCompiler')} value={compiler} onChange={setCompiler} placeholder="pdflatex" hint={t('adminSite.restartHint')} />} />
 
+      <SectionTitle>{t('adminSite.miscNotifications')}</SectionTitle>
+      <Two a={<Field id="misc-notif-delay" label={t('adminSite.miscNotifDelay')} type="number" value={notifDelay} onChange={setNotifDelay} placeholder="30000" hint={t('adminSite.miscNotifDelayHint', 'Delay between project changes before the e-mail notification is sent (ms). Applies on the next container cycle.')} />} />
+
+      <SaveFooter flash={flash} onSave={submit} note={t('adminSite.restartHint')} />
+    </Card>
+  )
+}
+
+// ------------------------------------------------------------------------
+// 2026-09-09 (owner R10 #3): the remaining compose env vars move into
+// admin/site — stored values hydrate the matching env at web boot (boot
+// hydrator, EnvHydrator.mjs), so the container no longer carries them.
+// ------------------------------------------------------------------------
+
+// LanguageTool server (was compose LANGUAGETOOL_URL / LANGUAGETOOL_ENABLED)
+export function LanguagetoolTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('languagetool')
+  const [enabled, setEnabled] = useState(initial.enabled !== false)
+  const [url, setUrl] = useState(String(initial.url ?? ''))
+
+  return (
+    <Card
+      title={t('adminSite.languagetool')}
+      enabled={enabled}
+      onEnabled={setEnabled}
+      badge="grammar"
+    >
+      <p className="text-muted">{t('adminSite.languagetoolDesc')}</p>
+      <Two
+        a={<Field id="lt-url" label={t('adminSite.languagetoolUrl')} value={url} onChange={setUrl} placeholder="http://languagetool:8010" hint={t('adminSite.languagetoolUrlHint')} />}
+      />
+      <SaveFooter
+        flash={flash}
+        onSave={() => void save({ enabled, url })}
+        note={t('adminSite.restartHint')}
+      />
+    </Card>
+  )
+}
+
+// LLM instance flags (was compose LLM_ENABLED / LLM_ALLOW_USER_SETTINGS /
+// LLM_USER_RATE_PER_MINUTE…). Model selection stays on /admin/llm/settings.
+export function LlmInstanceTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('llm')
+  const [enabled, setEnabled] = useState(initial.enabled !== false)
+  const [allowUser, setAllowUser] = useState(
+    initial.allowUserSettings !== false
+  )
+  const [userRate, setUserRate] = useState(String(initial.userRatePerMinute ?? 10))
+  const [adminRate, setAdminRate] = useState(String(initial.adminRatePerMinute ?? 0))
+  const [userDaily, setUserDaily] = useState(String(initial.userDailyTokens ?? 0))
+
+  return (
+    <Card
+      title={t('adminSite.llmInstance')}
+      enabled={enabled}
+      onEnabled={setEnabled}
+      badge="ai"
+    >
+      <p className="text-muted">{t('adminSite.llmInstanceDesc')}</p>
+      <Two a={<Switch id="llm-allow-user" checked={allowUser} onChange={setAllowUser} label={t('adminSite.llmAllowUserSettings')} />} />
+      <Two
+        a={<Field id="llm-user-rate" label={t('adminSite.llmUserRate')} type="number" value={userRate} onChange={setUserRate} placeholder="10" hint={t('adminSite.llmRateHint')} />}
+        b={<Field id="llm-admin-rate" label={t('adminSite.llmAdminRate')} type="number" value={adminRate} onChange={setAdminRate} placeholder="0 (unlimited)" />}
+      />
+      <Two a={<Field id="llm-user-daily" label={t('adminSite.llmUserDailyTokens')} type="number" value={userDaily} onChange={setUserDaily} placeholder="0 (unlimited)" hint={t('adminSite.llmRateHint')} />} />
+      <SaveFooter
+        flash={flash}
+        onSave={() =>
+          void save({
+            enabled,
+            allowUserSettings: allowUser,
+            userRatePerMinute: parseInt(userRate, 10) || 0,
+            adminRatePerMinute: parseInt(adminRate, 10) || 0,
+            userDailyTokens: parseInt(userDaily, 10) || 0,
+          })}
+        note={t('adminSite.restartHint')}
+      />
+    </Card>
+  )
+}
+
+// Branding: navbar title + footers (was compose OVERLEAF_NAV_TITLE /
+// OVERLEAF_LEFT_FOOTER / OVERLEAF_RIGHT_FOOTER).
+export function BrandingTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('branding')
+  const [navTitle, setNavTitle] = useState(String(initial.navTitle ?? ''))
+  const [leftFooter, setLeftFooter] = useState(String(initial.leftFooter ?? ''))
+  const [rightFooter, setRightFooter] = useState(String(initial.rightFooter ?? ''))
+
+  return (
+    <Card title={t('adminSite.branding')} badge="branding">
+      <p className="text-muted">{t('adminSite.brandingDesc')}</p>
+      <Two a={<Field id="br-nav-title" label={t('adminSite.brandingNavTitle')} value={navTitle} onChange={setNavTitle} placeholder="Overleaf" hint={t('adminSite.restartHint')} />} />
+      <div className="mb-3">
+        <label htmlFor="br-left-footer" className="form-label"><strong>{t('adminSite.brandingLeftFooter')}</strong></label>
+        <textarea
+          id="br-left-footer"
+          className="form-control"
+          rows={3}
+          value={leftFooter}
+          placeholder='[{"text": "…", "url": "https://…"}]'
+          onChange={e => setLeftFooter(e.currentTarget.value)}
+        />
+        <p className="form-text">{t('adminSite.brandingFooterHint')}</p>
+      </div>
+      <div className="mb-3">
+        <label htmlFor="br-right-footer" className="form-label"><strong>{t('adminSite.brandingRightFooter')}</strong></label>
+        <textarea
+          id="br-right-footer"
+          className="form-control"
+          rows={2}
+          value={rightFooter}
+          placeholder='[{"text": "Powered by Overleaf", "url": "https://github.com/yu-i-i/overleaf-cep"}]'
+          onChange={e => setRightFooter(e.currentTarget.value)}
+        />
+      </div>
+      <SaveFooter
+        flash={flash}
+        onSave={() => void save({ navTitle, leftFooter, rightFooter })}
+        note={t('adminSite.restartHint')}
+      />
+    </Card>
+  )
+}
+
+// Internal service URLs (was compose V1_HISTORY_URL / GITHUBINTERFACE_* /
+// WEBDAVINTERFACE_API_URL / DROPBOXINTERFACE_API_URL /
+// DATAMANIPULATOR_API_URL). These are the web process → companion
+// service addresses; stored values replace the env at boot.
+export function ServicesTab ({ initial }: { initial: SectionValue }) {
+  const { t } = useTranslation()
+  const { flash, save } = useSave('services')
+  const [v1HistoryUrl, setV1HistoryUrl] = useState(String(initial.v1HistoryUrl ?? ''))
+  const [githubUrl, setGithubUrl] = useState(String(initial.githubInterfaceUrl ?? ''))
+  const [githubWorkdir, setGithubWorkdir] = useState(String(initial.githubInterfaceWorkdirRoot ?? ''))
+  const [webdavUrl, setWebdavUrl] = useState(String(initial.webdavInterfaceUrl ?? ''))
+  const [dropboxUrl, setDropboxUrl] = useState(String(initial.dropboxInterfaceUrl ?? ''))
+  const [datamanipUrl, setDatamanipUrl] = useState(String(initial.dataManipulatorUrl ?? ''))
+
+  const submit = () => {
+    void save({
+      v1HistoryUrl,
+      githubInterfaceUrl: githubUrl,
+      githubInterfaceWorkdirRoot: githubWorkdir,
+      webdavInterfaceUrl: webdavUrl,
+      dropboxInterfaceUrl: dropboxUrl,
+      dataManipulatorUrl: datamanipUrl,
+    })
+  }
+
+  return (
+    <Card title={t('adminSite.services')} badge="internal">
+      <p className="text-muted">{t('adminSite.servicesDesc')}</p>
+      <Two a={<Field id="svc-v1history" label={t('adminSite.svcV1History')} value={v1HistoryUrl} onChange={setV1HistoryUrl} placeholder="http://overleafserver:3100/api" hint={t('adminSite.restartHint')} />} />
+      <Two
+        a={<Field id="svc-gh" label={t('adminSite.svcGithub')} value={githubUrl} onChange={setGithubUrl} placeholder="http://localhost:4013" hint={t('adminSite.restartHint')} />}
+        b={<Field id="svc-gh-workdir" label={t('adminSite.svcGithubWorkdir')} value={githubWorkdir} onChange={setGithubWorkdir} placeholder="/var/lib/ghif" hint={t('adminSite.restartHint')} />}
+      />
+      <Two
+        a={<Field id="svc-webdav" label={t('adminSite.svcWebdav')} value={webdavUrl} onChange={setWebdavUrl} placeholder="http://localhost:4002" hint={t('adminSite.restartHint')} />}
+        b={<Field id="svc-dropbox" label={t('adminSite.svcDropbox')} value={dropboxUrl} onChange={setDropboxUrl} placeholder="http://localhost:4003" hint={t('adminSite.restartHint')} />}
+      />
+      <Two a={<Field id="svc-datamanipulator" label={t('adminSite.svcDatamanipulator')} value={datamanipUrl} onChange={setDatamanipUrl} placeholder="http://localhost:4001" hint={t('adminSite.restartHint')} />} />
       <SaveFooter flash={flash} onSave={submit} note={t('adminSite.restartHint')} />
     </Card>
   )

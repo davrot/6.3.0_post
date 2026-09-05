@@ -1,8 +1,24 @@
 import Settings from '@overleaf/settings'
 import Modules from '../../app/src/infrastructure/Modules.mjs'
 import logger from '@overleaf/logger'
+import { ensureEnvForSection } from '../../app/src/Features/SiteSettings/EnvHydrator.mjs'
 
 let WebdavModule = {}
+
+// 2026-09-04: WebDAV is admin-managed via /admin/site (site_settings store).
+// ESM evaluation order does not guarantee the boot hydrator ran before this
+// gate, so make this module self-sufficient: apply stored webdav values to
+// env right here, then gate on the (possibly hydrated) env as before.
+try {
+  await ensureEnvForSection('webdav')
+  // 2026-09-09 (owner R10 #3): interface URLs moved to the `services`
+  // section — the WebDAV/Datamanipulator clients read their env at
+  // construction, so hydrate that section here as well.
+  await ensureEnvForSection('services')
+} catch (err) {
+  logger.warn({ err }, 'WebDAV module: env hydration from store failed (env defaults stand)')
+}
+
 if (process.env.WEBDAV_ENABLED?.toLowerCase() === 'true') {
   logger.debug({}, 'Enabling WebDAV module')
 

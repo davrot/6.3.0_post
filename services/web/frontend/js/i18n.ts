@@ -13,6 +13,14 @@ const LANG = getMeta('ol-i18n').currentLangCode
 i18n.use(initReactI18next).init({
   lng: LANG,
 
+  // 2026-09-04 (owner #11): all keys in locales/en.json are FLAT and may
+  // contain literal dots ("adminSite.templates", ...). i18next's default
+  // nested resolution (keySeparator '.') split those into nonexistent paths
+  // and returned the raw key — the /admin/site sidebar showed
+  // "adminSite.templates" etc. Disable separator parsing: key = exact key.
+  keySeparator: false,
+  nsSeparator: false,
+
   // still using the v3 plural suffixes
   compatibilityJSON: 'v3',
 
