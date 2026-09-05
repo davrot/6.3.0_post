@@ -81,7 +81,21 @@ const httpPermissionsPolicy = {
 
 const safeCompilers = ['xelatex', 'pdflatex', 'latex', 'lualatex']
 
-module.exports = {
+// 2026-09-09 (owner R11 #9, live root-cause): the object below reads
+// process.env at BUILD time, and web boot order does not guarantee who
+// wins: the site-settings env hydration (EnvHydrator) or the first
+// @overleaf/settings consumer. If the snapshot freezes before hydration,
+// every admin-managed value (pandoc, LLM, webdav, …) silently stays OFF
+// while /admin/site shows it ON.
+//
+// Fix: export a lazy, stamp-based proxy. The object is built on first
+// access and rebuilt when EnvHydrator bumps the stamp after stored
+// values land in env. libraries/settings/Settings.js registers an
+// override re-apply hook (globalThis.__OL_SETTINGS_REAPPLY_OVERRIDES)
+// so every rebuild re-merges the /etc/overleaf/settings.js overrides
+// (sessionSecret & friends) — boot-critical values survive rebuilds.
+function buildSettings() {
+  return {
   env: 'server-ce',
 
   limits: {
@@ -1493,8 +1507,66 @@ module.exports = {
           linkPath: '/oidc/login',
         },
       }),
-  },
+  },}
 }
+
+// ── 2026-09-09 R11: stamp-based lazy export (see header comment) ──────
+const OL_SETTINGS_STAMP =
+  globalThis.OL_SETTINGS_STAMP || (globalThis.OL_SETTINGS_STAMP = { n: 0 })
+globalThis.OL_SETTINGS_REBUILD =
+  globalThis.OL_SETTINGS_REBUILD ||
+  function () {
+    OL_SETTINGS_STAMP.n += 1
+  }
+// Re-apply registry: every extension applied to the settings object —
+// the /etc/overleaf/settings.js overrides (via mergeWith), and whole
+// module sections set top-level (Settings.llm = {...}, Settings.webdav =
+// {...}, …) — is re-applied on each rebuild, so nothing is lost when
+// hydration bumps the stamp.
+const OL_SETTINGS_REAPPLIES = []
+const OL_SETTINGS_ASSIGNED = new Map()
+let _settingsCache = null
+let _settingsCacheStamp = -1
+function _settings() {
+  if (_settingsCache === null || _settingsCacheStamp !== OL_SETTINGS_STAMP.n) {
+    _settingsCache = buildSettings()
+    OL_SETTINGS_REAPPLIES.slice().forEach(fn => fn(_settingsCache))
+    for (const [k, v] of OL_SETTINGS_ASSIGNED) _settingsCache[k] = v
+    _settingsCacheStamp = OL_SETTINGS_STAMP.n
+  }
+  return _settingsCache
+}
+module.exports = new Proxy({}, {
+  get(_t, k) {
+    if (k === 'mergeWith') {
+      // 2026-09-11 (R11): merge into the cache, register for re-apply, and
+      // return the PROXY itself (not the frozen built object) — callers
+      // keep rebuild semantics on later access.
+      return function (overrides) {
+        OL_SETTINGS_REAPPLIES.push(target => merge(overrides, target))
+        merge(overrides, _settings())
+        return module.exports
+      }
+    }
+    return _settings()[k]
+  },
+  set(_t, k, v) {
+    // 2026-09-11 (R11): remember whole-section assignments (Settings.llm =
+    // {...} etc.) so a post-hydration rebuild does not drop module sections.
+    if (typeof k === 'string' && k !== 'mergeWith') OL_SETTINGS_ASSIGNED.set(k, v)
+    _settings()[k] = v
+    return true
+  },
+  has(_t, k) {
+    return k in _settings()
+  },
+  ownKeys() {
+    return Reflect.ownKeys(_settings())
+  },
+  getOwnPropertyDescriptor(_t, k) {
+    return Object.getOwnPropertyDescriptor(_settings(), k)
+  },
+})
 
 module.exports.mergeWith = function (overrides) {
   return merge(overrides, module.exports)

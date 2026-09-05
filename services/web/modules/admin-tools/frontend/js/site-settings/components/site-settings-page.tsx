@@ -61,7 +61,6 @@ import {
   WebdavTab,
   DropboxTab,
   LanguagetoolTab,
-  LlmInstanceTab,
   BrandingTab,
   ServicesTab
 } from './r9-settings-tabs'
@@ -144,8 +143,8 @@ const SECTIONS: { id: Section; labelKey: string }[] = [
   { id: 'webdav', labelKey: 'adminSite.webdav' },
   { id: 'dropbox', labelKey: 'adminSite.dropbox' },
   // 2026-09-09 (owner R10 #3): new sections
+  // (the LLM instance section moved to /user/llm-settings — owner R11 #11)
   { id: 'languagetool', labelKey: 'adminSite.languagetool' },
-  { id: 'llm', labelKey: 'adminSite.llmInstance' },
   { id: 'branding', labelKey: 'adminSite.branding' },
   { id: 'services', labelKey: 'adminSite.services' },
   { id: 'misc', labelKey: 'adminSite.miscellaneous' },
@@ -390,12 +389,6 @@ export default function SiteSettingsPage() {
                         <LanguagetoolTab
                           key={`lt-${settings.languagetool?.enabled}`}
                           initial={settings.languagetool ?? { enabled: true, url: '' }}
-                        />
-                      )}
-                      {active === 'llm' && (
-                        <LlmInstanceTab
-                          key={`llm-${settings.llm?.enabled}`}
-                          initial={settings.llm ?? { enabled: true }}
                         />
                       )}
                       {active === 'branding' && (

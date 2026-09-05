@@ -29,6 +29,12 @@ const OPTIONS: {
     label: 'Emacs',
     desc: 'Emacs emulation mode (C-a, C-e, C-f/C-b, C-k, C-w, M-f …).',
   },
+  // 2026-09-09 (owner R11 #2): Custom = Overleaf defaults + your own bindings.
+  {
+    value: 'custom',
+    label: 'Custom',
+    desc: 'The Overleaf keymap with your own custom bindings added on top (Customize key bindings).',
+  },
 ]
 
 function KeyBindingsInner() {
@@ -65,11 +71,7 @@ function KeyBindingsInner() {
           >
             <strong>{option.label}</strong>{' '}
             <span className="form-text d-block ms-0">
-              {option.value === 'default'
-                ? t('keybindings_default_desc')
-                : option.value === 'vim'
-                  ? t('keybindings_vim_desc')
-                  : t('keybindings_emacs_desc')}
+              {t(`keybindings_${option.value}_desc`, option.desc)}
             </span>
           </label>
         </div>

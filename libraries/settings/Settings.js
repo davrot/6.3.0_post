@@ -47,7 +47,14 @@ const overridesPath =
   pathIfExists(Path.join(CWD, `config/settings.${NODE_ENV}.js`))
 if (overridesPath) {
   console.log(`Using settings from ${overridesPath}`)
-  settings = merge(requireFromFile(overridesPath), settings)
+  const overridesModule = requireFromFile(overridesPath)
+  // 2026-09-11 (R11): when defaults is a lazy/stamp-based module (web),
+  // route through mergeWith() so the overrides are RE-APPLIED on every
+  // post-hydration rebuild (sessionSecret & co must survive).
+  settings =
+    typeof settings.mergeWith === 'function'
+      ? settings.mergeWith(overridesModule)
+      : merge(overridesModule, settings)
   settingsExist = true
 }
 

@@ -4,6 +4,7 @@ import getMeta from '@/utils/meta'
 import LLMSettingsSection from './llm-settings-section'
 import LLMComplianceSettings from './llm-compliance-settings' // overleaf-lab (2026-08-27): user-scoped review rubrics
 import LLMUsageMeter from './llm-usage-meter' // overleaf-lab (usage meter)
+import LLMInstanceSettings from './llm-instance-settings' // 2026-09-09 (owner R11 #11)
 // overleaf-lab (grammar port): per-user grammar-checking settings (mode/language/
 // blocked rules). The per-project picky toggle renders in the project Settings
 // modal (it needs a live project context; this user-scoped page has none).
@@ -23,6 +24,15 @@ export default function LLMSettingsPage() {
     const { isReady } = useWaitForI18n()
     useScrollToIdOnLoad()
     const user = getMeta('ol-user') || {}
+    // 2026-09-09 (owner R11 #11): the admin instance card shows only here
+    // for users allowed the admin area (same flag as the navbar Manage).
+    // 2026-09-11 (owner R11 #11 fix): ol-navbar meta is not present on this
+    // page shell — fall back to the user document's isAdmin (ol-user meta),
+    // otherwise the instance card is invisible to everyone.
+    const canAdmin = Boolean(
+        (getMeta('ol-navbar') as { canDisplayAdminMenu?: boolean } | undefined)
+            ?.canDisplayAdminMenu || (user as { isAdmin?: boolean } | undefined)?.isAdmin
+    )
 
     // 2026-09-04 (R5#2, owner round-5): this component renders CONTENT ONLY.
     // The page chrome — navbar, the golden left column with the section
@@ -135,6 +145,11 @@ export default function LLMSettingsPage() {
                             <LLMUsageMeter scope="user" />
                         </div>
                     </div>
+
+                    {/* 2026-09-09 (owner R11 #11): the instance LLM settings
+                        (was the /admin/site "LLM (instance)" tab) now live
+                        here too — all LLM settings in one place. Admins only. */}
+                    {canAdmin && <LLMInstanceSettings />}
                 </div>
             </UserProvider>
         ) : null

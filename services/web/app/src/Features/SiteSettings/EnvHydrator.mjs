@@ -21,7 +21,47 @@
  * gate check — order-independent, same env mapping, single source of truth.
  */
 import logger from '@overleaf/logger'
-import { readStoredSection } from './SiteSettingsManager.mjs'
+
+/**
+ * 2026-09-09 (live R11 #5): standalone stored-section reader.
+ *
+ * CRITICAL: this module must NOT import SiteSettingsManager (or anything
+ * that imports @overleaf/settings) — ESM evaluates an importer's static
+ * graph BEFORE the top-level await below runs, and the first import of
+ * config/settings.js freezes the Settings snapshot (enablePandocConversions,
+ * splitTest overrides, email fields, …) with the pre-hydration env. That is
+ * exactly what disabled pandoc conversions (Download Word/MD + New Project
+ * import vanished) in the field. The reader below uses the raw mongodb
+ * driver only — an app-graph-free dep that triggers no config build.
+ */
+let _globalDocPromise = null
+async function readGlobalDoc() {
+  if (!_globalDocPromise) {
+    _globalDocPromise = (async () => {
+      try {
+        const url = process.env.OVERLEAF_MONGO_URL
+        if (!url) return null
+        const { MongoClient } = await import('mongodb')
+        const client = new MongoClient(url, { serverSelectionTimeoutMS: 4000 })
+        try {
+          await client.connect()
+          const doc = await client
+            .db()
+            .collection('site_settings')
+            .findOne({ _id: 'global' })
+          return doc || null
+        } finally {
+          await client.close()
+        }
+      } catch (err) {
+        // allow retries on later calls instead of caching a failed attempt
+        _globalDocPromise = null
+        throw err
+      }
+    })()
+  }
+  return _globalDocPromise
+}
 
 const b = (v) => (v ? 'true' : 'false')
 
@@ -141,7 +181,8 @@ const SECTION_ENV_MAPS = {
   services: (sv) => ({
     V1_HISTORY_URL: sv.v1HistoryUrl || '',
     GITHUBINTERFACE_API_URL: sv.githubInterfaceUrl || '',
-    GITHUBINTERFACE_WORKDIR_ROOT: sv.githubInterfaceWorkdirRoot || '',
+    GITHUBINTERFACE_WORKDIR_ROOT:
+      sv.githubInterfaceWorkdirRoot || '/var/lib/overleaf/ghif',
     WEBDAVINTERFACE_API_URL: sv.webdavInterfaceUrl || '',
     DROPBOXINTERFACE_API_URL: sv.dropboxInterfaceUrl || '',
     DATAMANIPULATOR_API_URL: sv.dataManipulatorUrl || '',
@@ -174,6 +215,17 @@ function applyEntries(entries) {
     if (value === undefined || value === null) continue
     process.env[envName] = String(value)
   }
+  // 2026-09-09 (R11 #9): stored env values just changed — invalidate any
+  // already-frozen @overleaf/settings snapshot so the lazy proxy
+  // (services/web/config/settings.defaults.js) re-bakes with the stored
+  // values. No-op in processes without that proxy.
+  if (typeof globalThis.OL_SETTINGS_REBUILD === 'function') {
+    try {
+      globalThis.OL_SETTINGS_REBUILD()
+    } catch {
+      /* never block boot on the cache stamp */
+    }
+  }
 }
 
 /**
@@ -187,8 +239,8 @@ function applyEntries(entries) {
 export async function ensureEnvForSection(name) {
   const map = SECTION_ENV_MAPS[name]
   if (!map) return false
-  const stored = await readStoredSection(name)
-  if (!stored) return false
+  const stored = (await readGlobalDoc())?.[name]
+  if (!stored || typeof stored !== 'object') return false
   applyEntries(map(stored))
   logger.info({ section: name }, 'boot: env hydrated from stored site settings')
   return true
@@ -209,9 +261,19 @@ export async function hydrateEnvFromStoredSiteSettings() {
   }
 }
 
-// Self-executing: the web app imports this module early (app.mjs). ESM
-// top-level await pauses the import graph until hydration finishes, so
-// Settings/env consumers imported AFTER it see the stored values.
-// (Consumers that evaluate out of order call ensureEnvForSection()
-// themselves — see 2026-09-04 hardening.)
+// 2026-09-09 (R11 live fix, owner): pandoc/conversions REGRESSED in R10's
+// lazy module-gate design — the gate fires only for sections a module
+// imports (llm/webdav/dropbox/languagetool/github-sync); PANDOC has no
+// such module, so ENABLE_PANDOC_CONVERSIONS never reached the process
+// env in time → Download "Word/md" + New project imports vanished.
+//
+// Live probing proved the deeper issue: in the real web process the
+// @overleaf/settings snapshot can be frozen BEFORE this top-level await
+// finishes (some ESM import evaluates first), so TLA order alone is NOT
+// the guarantee. The guarantee is the stamp: applyEntries() calls
+// globalThis.OL_SETTINGS_REBUILD() and web's config/settings.defaults.js
+// exports a lazy proxy that re-bakes once per stamp bump. The TLA below
+// is kept because it hydrates early in the common case; the stamps make
+// correctness order-independent. The per-module ensureEnvForSection()
+// gates stay as defense for out-of-order importers.
 await hydrateEnvFromStoredSiteSettings()

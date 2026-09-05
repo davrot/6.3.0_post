@@ -298,6 +298,28 @@ export default function GrammarSettingsSection() {
                             </label>
                         </div>
                     ))}
+                    {/* 2026-09-09 (owner R11 #13): general quality caveat
+                        for the LLM grammar modes — set expectations on ALL
+                        combos (llm and lt+llm), not just the pure-LLM one. */}
+                    {availability.llmAvailableForUser && (
+                        <OLFormText
+                            style={{
+                                marginTop: '0.5rem',
+                                color: 'rgba(27, 34, 44, 0.75)',
+                            }}
+                        >
+                            Note on LLM grammar: suggestions come from the
+                            selected language model and are far less
+                            deterministic than classic checks. Smaller models
+                            in particular can be inconsistent — flagging
+                            correct text or missing real errors. Rely on
+                            Overleaf spell check and LanguageTool for stable,
+                            explainable results and treat the LLM as a second
+                            opinion. A stronger model in the list above (or
+                            under BYO providers) noticeably improves output
+                            quality.
+                        </OLFormText>
+                    )}
                 </OLFormGroup>
 
                 {showModelSelector && (

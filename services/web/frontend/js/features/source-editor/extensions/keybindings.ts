@@ -230,6 +230,12 @@ export const setKeybindings = async (
   if (selectedKeybindings === 'none') {
     selectedKeybindings = 'default'
   }
+  // 2026-09-09 (owner R11 #2): "Custom" = the stock Overleaf keymap plus the
+  // user's own bindings from the Customize panel (the bindings layer is
+  // always active regardless of mode — so the base map is the default one).
+  if (selectedKeybindings === 'custom') {
+    selectedKeybindings = 'default'
+  }
 
   const selectedOption = options.find(
     option => option.name === selectedKeybindings

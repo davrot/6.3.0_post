@@ -59,15 +59,21 @@ export default function CustomKeybindingsModal({
   const [modeDraft, setModeDraft] = useState<Keybindings>('default')
   const [capturing, setCapturing] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  // 2026-09-09 (owner live feedback): "Reset now" must NOT just close the
+  // modal — it reports what was applied and stays open for confirmation.
+  const [resetApplied, setResetApplied] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   // (re)initialize on each open
   useEffect(() => {
     if (show) {
       setDraft({ ...storedCustom })
-      setModeDraft(currentMode)
+      // 'custom' is a valid account mode (default keymap + own bindings);
+      // the modal preset row itself only offers the real presets.
+      setModeDraft(currentMode === 'custom' ? 'default' : currentMode)
       setCapturing(null)
       setSaved(false)
+      setResetApplied(false)
     }
     // Only re-init on open/close — draft edits must not clobber the user's
     // in-flight changes, even though storedCustom/currentMode are sources.
@@ -107,7 +113,7 @@ export default function CustomKeybindingsModal({
 
   const changed =
     JSON.stringify(sortObject(draft)) !== JSON.stringify(sortObject(storedCustom)) ||
-    modeDraft !== currentMode
+    (modeDraft === 'custom' ? 'default' : modeDraft) !== (currentMode === 'custom' ? 'default' : currentMode)
 
   function sortObject(obj: Record<string, string>) {
     return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)))
@@ -159,7 +165,7 @@ export default function CustomKeybindingsModal({
       if (
         json &&
         typeof json === 'object' &&
-        ['default', 'vim', 'emacs'].includes(json.mode)
+        ['default', 'vim', 'emacs', 'custom'].includes(json.mode)
       ) {
         setModeDraft(json.mode as Keybindings)
       }
@@ -175,9 +181,10 @@ export default function CustomKeybindingsModal({
 
   const doApply = async () => {
     try {
-      if (modeDraft !== currentMode) {
-        await saveUserSettings('mode', modeDraft)
-        setUserSettings({ ...userSettings, mode: modeDraft })
+      const preset = modeDraft === 'custom' ? 'default' : modeDraft
+      if (preset !== (currentMode === 'custom' ? 'default' : currentMode)) {
+        await saveUserSettings('mode', preset)
+        setUserSettings({ ...userSettings, mode: preset })
       }
       if (JSON.stringify(sortObject(draft)) !== JSON.stringify(sortObject(storedCustom))) {
         const payload: Record<string, string | null> = {}
@@ -192,6 +199,32 @@ export default function CustomKeybindingsModal({
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('saving custom key bindings failed', err)
+    }
+  }
+
+  // 2026-09-09 (owner live feedback, supersedes R11 #3): "Reset now"
+  // pre-fill/apply the SELECTED preset (Overleaf / Vim / Emacs) as the
+  // account-wide keybinding default, clears custom overrides, PERSISTS,
+  // and reports the applied preset IN the modal — it no longer just
+  // closes. (The live editor keymaps are a per-project setting; the
+  // account default takes effect on the next project load.)
+  const doResetNow = async () => {
+    try {
+      const preset = modeDraft === 'custom' ? 'default' : modeDraft
+      await saveUserSettings('mode', preset)
+      const payload: Record<string, string | null> = {}
+      for (const a of KEYBINDING_ACTIONS) {
+        payload[a.id] = null
+      }
+      await saveUserSettings('customKeybindings', payload)
+      setUserSettings({ ...userSettings, mode: preset, customKeybindings: {} })
+      setModeDraft(preset)
+      setDraft({})
+      setResetApplied(true)
+      setSaved(false)
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('reset to preset failed', err)
     }
   }
 
@@ -311,13 +344,19 @@ export default function CustomKeybindingsModal({
           <OLButton
             variant="secondary"
             size="sm"
-            onClick={() => {
-              setModeDraft('default')
-              setDraft({})
-            }}
+            onClick={() => void doResetNow()}
           >
             {t('kb_reset_apply', 'Reset now')}
           </OLButton>
+          {resetApplied ? (
+            <span className="form-text ms-2 d-inline-block">
+              ✓{' '}
+              {t(
+                'kb_reset_applied',
+                'Applied as your account default — the editor uses it on the next project load.'
+              )}
+            </span>
+          ) : null}
         </div>
 
         <div className="d-flex flex-wrap align-items-center gap-2">

@@ -113,10 +113,9 @@ export function SandboxedCompilesTab (
         {t('adminSite.scFixed')}
       </p>
       <SectionTitle>Container Host</SectionTitle>
-      <Two
-        a={<Row><Field id="sc-hostdir" label={t('adminSite.scHostDir')} required value={hostDir} onChange={setHostDir} placeholder="/data/overleaf/compiles" hint={t('adminSite.scHostDirHint')} /></Row>}
-        b={<Row><Field id="sc-socket" label={t('adminSite.scSocket')} required value={socketPath} onChange={setSocketPath} placeholder="/var/run/docker.sock" hint={t('adminSite.scSocketHint')} /></Row>}
-      />
+      {/* 2026-09-09 (owner R11 #12): full-width rows — these are long paths */}
+      <Row cols={12}><Field id="sc-hostdir" label={t('adminSite.scHostDir')} required value={hostDir} onChange={setHostDir} placeholder="/data/overleaf/compiles" hint={t('adminSite.scHostDirHint')} /></Row>
+      <Row cols={12}><Field id="sc-socket" label={t('adminSite.scSocket')} required value={socketPath} onChange={setSocketPath} placeholder="/var/run/docker.sock" hint={t('adminSite.scSocketHint')} /></Row>
       <Two
         a={<Field id="sc-flags" label={t('adminSite.scFlags')} value={extraFlags} onChange={setExtraFlags} placeholder="-shell-escape" />}
         b={<Field id="sc-user" label={t('adminSite.scImageUser')} value={imageUser} onChange={setImageUser} placeholder="www-data" hint={t('adminSite.scImageUserHint')} />}
@@ -962,7 +961,6 @@ export function ServicesTab ({ initial }: { initial: SectionValue }) {
   const { flash, save } = useSave('services')
   const [v1HistoryUrl, setV1HistoryUrl] = useState(String(initial.v1HistoryUrl ?? ''))
   const [githubUrl, setGithubUrl] = useState(String(initial.githubInterfaceUrl ?? ''))
-  const [githubWorkdir, setGithubWorkdir] = useState(String(initial.githubInterfaceWorkdirRoot ?? ''))
   const [webdavUrl, setWebdavUrl] = useState(String(initial.webdavInterfaceUrl ?? ''))
   const [dropboxUrl, setDropboxUrl] = useState(String(initial.dropboxInterfaceUrl ?? ''))
   const [datamanipUrl, setDatamanipUrl] = useState(String(initial.dataManipulatorUrl ?? ''))
@@ -971,7 +969,6 @@ export function ServicesTab ({ initial }: { initial: SectionValue }) {
     void save({
       v1HistoryUrl,
       githubInterfaceUrl: githubUrl,
-      githubInterfaceWorkdirRoot: githubWorkdir,
       webdavInterfaceUrl: webdavUrl,
       dropboxInterfaceUrl: dropboxUrl,
       dataManipulatorUrl: datamanipUrl,
@@ -982,10 +979,12 @@ export function ServicesTab ({ initial }: { initial: SectionValue }) {
     <Card title={t('adminSite.services')} badge="internal">
       <p className="text-muted">{t('adminSite.servicesDesc')}</p>
       <Two a={<Field id="svc-v1history" label={t('adminSite.svcV1History')} value={v1HistoryUrl} onChange={setV1HistoryUrl} placeholder="http://overleafserver:3100/api" hint={t('adminSite.restartHint')} />} />
-      <Two
-        a={<Field id="svc-gh" label={t('adminSite.svcGithub')} value={githubUrl} onChange={setGithubUrl} placeholder="http://localhost:4013" hint={t('adminSite.restartHint')} />}
-        b={<Field id="svc-gh-workdir" label={t('adminSite.svcGithubWorkdir')} value={githubWorkdir} onChange={setGithubWorkdir} placeholder="/var/lib/ghif" hint={t('adminSite.restartHint')} />}
-      />
+      {/* 2026-09-09 (owner R11 #10): the githubinterface workdir root was
+          removed from here — it is a fixed container-level constant
+          (/var/lib/overleaf/ghif; shared by the in-container web +
+          githubinterface processes and persisted on the data volume). An
+          admin editing only this field would split web/interface views. */}
+      <Two a={<Field id="svc-gh" label={t('adminSite.svcGithub')} value={githubUrl} onChange={setGithubUrl} placeholder="http://localhost:4013" hint={t('adminSite.restartHint')} />} />
       <Two
         a={<Field id="svc-webdav" label={t('adminSite.svcWebdav')} value={webdavUrl} onChange={setWebdavUrl} placeholder="http://localhost:4002" hint={t('adminSite.restartHint')} />}
         b={<Field id="svc-dropbox" label={t('adminSite.svcDropbox')} value={dropboxUrl} onChange={setDropboxUrl} placeholder="http://localhost:4003" hint={t('adminSite.restartHint')} />}

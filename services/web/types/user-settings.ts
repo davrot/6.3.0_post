@@ -1,6 +1,6 @@
 import { FontFamily, LineHeight, OverallTheme } from '@/shared/utils/styles'
 
-export type Keybindings = 'none' | 'default' | 'vim' | 'emacs'
+export type Keybindings = 'none' | 'default' | 'vim' | 'emacs' | 'custom'
 export type PdfViewer = 'pdfjs' | 'native'
 
 export type RefProviderSettings = {

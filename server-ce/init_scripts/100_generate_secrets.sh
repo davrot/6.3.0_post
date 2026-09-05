@@ -14,25 +14,24 @@ generate_secret () {
   dd if=/dev/urandom bs=1 count=32 2>/dev/null | base64 -w 0 | rev | cut -b 2- | rev | tr -d '\n+/'
 }
 
-if [ ! -f "$WEB_API_PASSWORD_FILE" ] ||
-  [ ! -f "$STAGING_PASSWORD_FILE" ] ||
-  [ ! -f "$V1_HISTORY_PASSWORD_FILE" ] ||
-  [ ! -f "$CRYPTO_RANDOM_FILE" ] ||
-  [ ! -f "$OT_JWT_AUTH_KEY_FILE" ]
-then
-    echo "generating random secrets"
-
-    SECRET=$(generate_secret)
-    echo "${SECRET}" > ${WEB_API_PASSWORD_FILE}
-
-    SECRET=$(generate_secret)
-    echo "${SECRET}" > ${STAGING_PASSWORD_FILE}
-    echo "${SECRET}" > ${V1_HISTORY_PASSWORD_FILE}
-
-    SECRET=$(generate_secret)
-    echo "${SECRET}" > ${CRYPTO_RANDOM_FILE}
-
-    SECRET=$(generate_secret)
-    echo "${SECRET}" > ${OT_JWT_AUTH_KEY_FILE}
-fi
+# 2026-09-11 (R11): per-file idempotency. The old all-or-nothing block
+# REGENERATED every secret when any single file was missing — and it
+# OVERWROTE secrets provided via the container environment (e.g.
+# CRYPTO_RANDOM from .env) with fresh random values on every container
+# recreate, invalidating all stored encrypted credentials (WebDAV/Dropbox
+# tokens -> 500 "error decrypting token"). Now: only create files that are
+# genuinely absent; env-provided files win and are never touched.
+echo "checking bootstrap secrets"
+gen_into () {
+  local dest="$1"
+  if [ ! -f "$dest" ]; then
+    echo "$(generate_secret)" > "$dest"
+    echo "  generated: $dest"
+  fi
+}
+gen_into "${WEB_API_PASSWORD_FILE}"
+gen_into "${STAGING_PASSWORD_FILE}"
+gen_into "${V1_HISTORY_PASSWORD_FILE}"
+gen_into "${CRYPTO_RANDOM_FILE}"
+gen_into "${OT_JWT_AUTH_KEY_FILE}"
 

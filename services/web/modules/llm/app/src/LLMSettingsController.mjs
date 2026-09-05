@@ -446,7 +446,11 @@ async function llmSettingsPage(req, res) {
     // overleaf-lab: dedicated BYO settings page (the Account ▸ 'AI Settings' item
     // and the Account Settings card both link here; it used to be a redirect to
     // the generic settings page, which showed no LLM UI at all).
-    const allowUser = !!(Settings.llm && Settings.llm.allowUserSettings)
+    // 2026-09-11 (R11 fix): read the hydrated env directly (same source as
+    // the JSON routes) — Settings.llm may be a pre-hydration snapshot.
+    const allowUser =
+        process.env.LLM_ALLOW_USER_SETTINGS === 'true' ||
+        !!(Settings.llm && Settings.llm.allowUserSettings)
     // WS5: keep the page-level surface consistent with the API — disabled BYO
     // deployments answer 403 for the page as well (not just the JSON routes).
     if (!allowUser) {

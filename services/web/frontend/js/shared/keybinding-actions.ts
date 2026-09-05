@@ -1,21 +1,33 @@
 /**
  * 2026-09-09 (owner R9 #4): custom key bindings.
  *
- * The rebindable action set for the editor. Every id is a command-registry
- * command id (see frontend/js/features/ide-react/context/command-registry-
- * context.tsx), whose registered handler is what a custom binding triggers.
+ * The rebindable action set for the editor. Two tiers:
+ *  1. **registry tier** — every id below is also a command-registry
+ *     command id (see frontend/js/features/ide-react/context/command-
+ *     registry-context.tsx); a custom binding invokes that registered
+ *     handler (cut/copy/compile/downloads/layouts/…).
+ *  2. **editor tier** — actions bound inside the source editor's own
+ *     CodeMirror keymap (delete line, indent, case, fold, line moves,
+ *     find-next, …). A custom binding replays the action's stock key combo
+ *     as a real keydown on the active editor view, so it resolves against
+ *     WHICHEVER keymap mode is active (Default / Vim / Emacs / Custom).
  *
- * `defaultKey` is the stock Overleaf (default-mode) binding for that action;
- * it is what the manager shows in the "Default" column and what Reset-to-
- * default restores to. Keys use the CodeMirror 6 key syntax (Mod- / Shift- /
- * Alt-), so they are both human-readable and directly dispatchable.
+ * `defaultKey` is the stock Overleaf binding for that action; it is what
+ * the manager shows in the "Default" column. Keys use the CodeMirror 6 key
+ * syntax (Mod- / Shift- / Alt-), so they are both human-readable and
+ * directly dispatchable.
  */
+import { EditorView } from '@codemirror/view'
+
 export interface KeybindingAction {
   id: string
   label: string
   // i18n key for the label (falls back to the literal label)
   key: string
   defaultKey: string
+  // editor tier: the stock CM keymap combo to replay when this action is
+  // bound to a user key (candidates tried in order until one is handled).
+  dispatchKeys?: string[]
 }
 
 export const KEYBINDING_ACTIONS: KeybindingAction[] = [
@@ -195,6 +207,192 @@ export const KEYBINDING_ACTIONS: KeybindingAction[] = [
     key: 'kb_synctex_code',
     defaultKey: '∅',
   },
+  // 2026-09-09 (owner R11 #1: "existing overleaf keybinds" — the full stock
+  // list): editor-tier actions bound in the CodeMirror keymap itself. A
+  // custom binding replays the listed stock combo on the active editor
+  // view (candidates tried until one handles the event).
+  {
+    id: 'save-compile',
+    label: 'Save & compile',
+    key: 'kb_save_compile',
+    defaultKey: 'Mod-s',
+    dispatchKeys: ['Mod-s'],
+  },
+  {
+    id: 'toggle-comment',
+    label: 'Toggle line comment',
+    key: 'kb_toggle_comment',
+    defaultKey: 'Mod-/',
+    dispatchKeys: ['Mod-/'],
+  },
+  {
+    id: 'delete-line',
+    label: 'Delete line',
+    key: 'kb_delete_line',
+    defaultKey: 'Mod-d',
+    dispatchKeys: ['Mod-d', 'Shift-Mod-k'],
+  },
+  {
+    id: 'autocomplete',
+    label: 'Autocomplete / reference search',
+    key: 'kb_autocomplete',
+    defaultKey: 'Mod-Space',
+    dispatchKeys: ['Mod- '],
+  },
+  {
+    id: 'fold-toggle',
+    label: 'Fold / unfold here',
+    key: 'kb_fold_toggle',
+    defaultKey: 'F2',
+    dispatchKeys: ['F2', 'Mod-Shift-['],
+  },
+  {
+    id: 'fold-all',
+    label: 'Fold all',
+    key: 'kb_fold_all',
+    defaultKey: 'Alt-Shift-1',
+    dispatchKeys: ['Alt-Shift-1', 'Mod-Shift-['],
+  },
+  {
+    id: 'unfold-all',
+    label: 'Unfold all',
+    key: 'kb_unfold_all',
+    defaultKey: 'Alt-Shift-0',
+    dispatchKeys: ['Alt-Shift-0', 'Mod-Shift-]'],
+  },
+  {
+    id: 'indent-less',
+    label: 'Indent less',
+    key: 'kb_indent_less',
+    defaultKey: 'Mod-[',
+    dispatchKeys: ['Mod-['],
+  },
+  {
+    id: 'indent-more',
+    label: 'Indent more',
+    key: 'kb_indent_more',
+    defaultKey: 'Mod-]',
+    dispatchKeys: ['Mod-]'],
+  },
+  {
+    id: 'case-upper',
+    label: 'Change selection to uppercase',
+    key: 'kb_case_upper',
+    defaultKey: 'Mod-u',
+    dispatchKeys: ['Mod-u'],
+  },
+  {
+    id: 'case-lower',
+    label: 'Change selection to lowercase',
+    key: 'kb_case_lower',
+    defaultKey: 'Mod-Shift-u',
+    dispatchKeys: ['Mod-Shift-u'],
+  },
+  {
+    id: 'duplicate-line',
+    label: 'Duplicate line',
+    key: 'kb_duplicate_line',
+    defaultKey: 'Mod-Shift-d',
+    dispatchKeys: ['Mod-Shift-d'],
+  },
+  {
+    id: 'copy-line-up',
+    label: 'Copy line(s) up',
+    key: 'kb_copy_line_up',
+    defaultKey: 'Alt-Shift-ArrowUp',
+    dispatchKeys: ['Alt-Shift-ArrowUp'],
+  },
+  {
+    id: 'copy-line-down',
+    label: 'Copy line(s) down',
+    key: 'kb_copy_line_down',
+    defaultKey: 'Alt-Shift-ArrowDown',
+    dispatchKeys: ['Alt-Shift-ArrowDown'],
+  },
+  {
+    id: 'move-line-up',
+    label: 'Move line(s) up',
+    key: 'kb_move_line_up',
+    defaultKey: 'Alt-ArrowUp',
+    dispatchKeys: ['Alt-ArrowUp'],
+  },
+  {
+    id: 'move-line-down',
+    label: 'Move line(s) down',
+    key: 'kb_move_line_down',
+    defaultKey: 'Alt-ArrowDown',
+    dispatchKeys: ['Alt-ArrowDown'],
+  },
+  {
+    id: 'line-start',
+    label: 'Go to line start',
+    key: 'kb_line_start',
+    defaultKey: 'Alt-ArrowLeft',
+    dispatchKeys: ['Alt-ArrowLeft', 'Ctrl-ArrowLeft', 'Home'],
+  },
+  {
+    id: 'line-end',
+    label: 'Go to line end',
+    key: 'kb_line_end',
+    defaultKey: 'Alt-ArrowRight',
+    dispatchKeys: ['Alt-ArrowRight', 'Ctrl-ArrowRight', 'End'],
+  },
+  {
+    id: 'doc-start',
+    label: 'Go to document start',
+    key: 'kb_doc_start',
+    defaultKey: 'Mod-Home',
+    dispatchKeys: ['Mod-Home'],
+  },
+  {
+    id: 'doc-end',
+    label: 'Go to document end',
+    key: 'kb_doc_end',
+    defaultKey: 'Mod-End',
+    dispatchKeys: ['Mod-End'],
+  },
+  {
+    id: 'goto-line',
+    label: 'Go to line number…',
+    key: 'kb_goto_line',
+    defaultKey: 'Mod-Shift-l',
+    dispatchKeys: ['Mod-Shift-l'],
+  },
+  {
+    id: 'find-next',
+    label: 'Find next',
+    key: 'kb_find_next',
+    defaultKey: 'Mod-g',
+    dispatchKeys: ['Mod-g'],
+  },
+  {
+    id: 'find-previous',
+    label: 'Find previous',
+    key: 'kb_find_previous',
+    defaultKey: 'Mod-Shift-g',
+    dispatchKeys: ['Mod-Shift-g'],
+  },
+  {
+    id: 'add-cursor-up',
+    label: 'Add cursor above',
+    key: 'kb_add_cursor_up',
+    defaultKey: 'Mod-Alt-ArrowUp',
+    dispatchKeys: ['Mod-Alt-ArrowUp'],
+  },
+  {
+    id: 'add-cursor-down',
+    label: 'Add cursor below',
+    key: 'kb_add_cursor_down',
+    defaultKey: 'Mod-Alt-ArrowDown',
+    dispatchKeys: ['Mod-Alt-ArrowDown'],
+  },
+  {
+    id: 'review-panel',
+    label: 'Toggle review panel',
+    key: 'kb_review_panel',
+    defaultKey: 'Mod-j',
+    dispatchKeys: ['Mod-j'],
+  },
 ]
 
 /**
@@ -266,4 +464,104 @@ export function keyStringFromKeyboardEvent(e: KeyboardEvent): string {
   if (key.length === 1 && /[a-zA-Z]/.test(key)) key = key.toLowerCase()
   parts.push(key)
   return parts.join('-')
+}
+
+/* ------------------------------------------------------------------ */
+/* Editor-tier dispatch (owner R11 #1)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Find the active CodeMirror editor view from the DOM (the project editor
+ * renders exactly one `.cm-editor` when its tab is open).
+ */
+export function activeEditorView() {
+  if (typeof document === 'undefined') return null
+  const el = document.querySelector<HTMLElement>('.cm-editor')
+  if (!el) return null
+  try {
+    // EditorView is the same bundled @codemirror/view module the editor
+    // itself uses.
+    return EditorView.findFromDOM(el)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Replay a CodeMirror key combo (e.g. 'Mod-Shift-u', 'Alt-ArrowUp', 'F2')
+ * inside an editor view by dispatching the equivalent keydown. CM6's keymap
+ * plugin listens for `keydown` on the editor DOM and matches the event's
+ * key + modifier bits, so a synthetic event behaves like the real keypress
+ * and resolves against WHICHEVER keymap stack is currently active
+ * (default, vim, emacs, …).
+ *
+ * Returns true when some binding handled the event.
+ */
+export function replayEditorCombo(view: any, combo: string): boolean {
+  if (!view || !combo) return false
+  const parts = combo.split('-').filter(Boolean)
+  if (parts.length < 1) return false
+  const keyName = parts[parts.length - 1] ?? ''
+  if (!keyName) return false
+  const mods = new Set(parts.slice(0, -1).map(p => p.toLowerCase()))
+  const isMac =
+    typeof navigator !== 'undefined' &&
+    /Mac|iPod|iPhone|iPad/.test(navigator.platform || '')
+  const key = keyName === 'Space' ? ' ' : keyName
+  const event = new KeyboardEvent('keydown', {
+    key,
+    ctrlKey: mods.has('ctrl') || (mods.has('mod') && !isMac),
+    metaKey: mods.has('meta') || (mods.has('mod') && isMac),
+    shiftKey: mods.has('shift'),
+    altKey: mods.has('alt'),
+    bubbles: true,
+    cancelable: true,
+  })
+  const target: any = view.contentDOM || view.dom || null
+  if (!target || typeof target.dispatchEvent !== 'function') return false
+  try {
+    target.dispatchEvent(event)
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('custom keybinding: replay failed', combo, err)
+    return false
+  }
+  // keymap plugins call preventDefault when they handled the event
+  return event.defaultPrevented
+}
+
+/**
+ * Dispatch a bound action for the two tiers: registry command handlers
+ * first (existing behaviour), then editor-tier keymap replay.
+ */
+export function runKeybindingAction(
+  action: KeybindingAction,
+  registry?: {
+    get: (id: string) => { handler?: ((o?: unknown) => unknown) | null } | null
+  }
+): boolean {
+  // Registry tier (R9/R10 actions: command-registry command ids).
+  if (action.id && registry) {
+    const command = registry.get(action.id)
+    if (command && typeof command.handler === 'function') {
+      try {
+        command.handler({ location: 'custom-keybinding' })
+        return true
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`custom keybinding "${action.id}" failed`, err)
+        return false
+      }
+    }
+  }
+  // Editor tier (R11 editor keymap actions).
+  if (action.dispatchKeys && action.dispatchKeys.length > 0) {
+    const view = activeEditorView()
+    if (!view) return false
+    for (const combo of action.dispatchKeys) {
+      if (replayEditorCombo(view, combo)) return true
+    }
+    return false
+  }
+  return false
 }

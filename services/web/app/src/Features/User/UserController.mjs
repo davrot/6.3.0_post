@@ -412,8 +412,11 @@ const updateUserSettingsSchema = z.object({
     referencesSearchMode: z.string().optional(),
     darkModePdf: z.coerce.boolean().optional(),
     floatingMenu: z.coerce.boolean().optional(),
-    // 2026-09-09 (owner R9 #4): custom keybindings — { commandId: keyString | null }
-    customKeybindings: z.record(z.union([z.string(), z.null()])).nullish(),
+    // 2026-09-09 (owner R9 #4 + R11 zod-fix): custom keybindings —
+    // { commandId: keyString | null }. NOTE: zod 4.1.11 one-arg z.record(v)
+    // CRASHES on parse (def.valueType undefined → 500 on every settings
+    // save); the two-arg z.record(k, v) form is required.
+    customKeybindings: z.record(z.string(), z.union([z.string(), z.null()])).nullish(),
     zotero: refProviderSettingsSchema,
     mendeley: refProviderSettingsSchema,
     papers: refProviderSettingsSchema,

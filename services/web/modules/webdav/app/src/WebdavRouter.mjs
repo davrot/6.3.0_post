@@ -29,7 +29,17 @@ export default {
         if (!userId) return res.status(401).json({ error: 'Unauthorized' })
 
         try {
-          const credentials = await WebdavCredentials.get(userId)
+          let credentials
+          try {
+            credentials = await WebdavCredentials.get(userId)
+          } catch (decErr) {
+            // 2026-09-11 (owner bug: /user/webdav/status 500 "error
+            // decrypting token"): stored ciphertext from a rotated
+            // CRYPTO_RANDOM is forever unreadable. Degrade gracefully to
+            // "not linked" (user re-connects) instead of a 500.
+            logger?.warn?.({ err: decErr }, 'webdav: stored credentials undecryptable; treating as not linked')
+            return res.json({ connected: false, error: 'stored-credentials-invalid' })
+          }
           if (!credentials) {
             return res.json({ connected: false })
           }

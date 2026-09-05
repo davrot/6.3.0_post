@@ -127,12 +127,16 @@ export function Switch ({ id, checked, onChange, label, disabled }: {
 /** Card shell: header with title + optional enable switch. */
 // One or two columns inside a card (CE+ row/col-md-* vocabulary).
 export function Row ({ cols, children }: {
-  cols?: number
+  cols?: number | 'col-12'
   children: React.ReactNode
 }) {
+  // 2026-09-11 (owner R11 #12): 12 / 'col-12' = full-width row (long paths
+  // like the sandbox host dir & socket — must not be squeezed into half).
+  const cls =
+    cols === 12 || cols === 'col-12' ? 'col-12' : cols === 3 ? 'col-md-4' : 'col-md-6'
   return (
     <div className="row mb-3">
-      <div className={cols === 3 ? 'col-md-4' : 'col-md-6'}>{children}</div>
+      <div className={cls}>{children}</div>
     </div>
   )
 }

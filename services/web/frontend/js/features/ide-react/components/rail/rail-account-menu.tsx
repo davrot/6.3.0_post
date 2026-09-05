@@ -22,17 +22,9 @@ function userEmail(): string {
   return s?.sessionUser?.email ?? ''
 }
 
-function navFlags(): { canAdmin?: boolean } {
-  const nav = (getMeta('ol-navbar') ?? {}) as {
-    canDisplayAdminMenu?: boolean
-  }
-  return { canAdmin: Boolean(nav.canDisplayAdminMenu) }
-}
-
 export function RailAccountMenu() {
   const { t } = useTranslation()
   const email = userEmail()
-  const { canAdmin } = navFlags()
 
   return (
     <OLDropdownMenu>
@@ -45,7 +37,7 @@ export function RailAccountMenu() {
           {email}
         </div>
       )}
-      {(email || canAdmin) && <OLDropdownDivider />}
+      {email && <OLDropdownDivider />}
       <OLDropdownItem href="/project" role="menuitem">
         {t('projects')}
       </OLDropdownItem>
@@ -61,11 +53,6 @@ export function RailAccountMenu() {
       <OLDropdownItem href="/user/llm-settings" role="menuitem">
         {t('nav.aiSettings', 'AI Settings')}
       </OLDropdownItem>
-      {canAdmin && (
-        <OLDropdownItem href="/admin" role="menuitem">
-          {t('manage', 'Manage')}
-        </OLDropdownItem>
-      )}
       <OLDropdownDivider />
       {/* form-scoped log out (no global form on the editor page) */}
       <span className="d-block">
