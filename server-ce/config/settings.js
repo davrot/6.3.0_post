@@ -340,6 +340,11 @@ if (process.env.OVERLEAF_RIGHT_FOOTER != null) {
 
 if (process.env.OVERLEAF_HEADER_IMAGE_URL != null) {
   settings.nav.custom_logo = process.env.OVERLEAF_HEADER_IMAGE_URL
+} else {
+  // 2026-09-05 (OlliTeX rebrand): default navbar brand (login/register and
+  // other marketing pages) = the fork's full logo, top-left corner.
+  // Env OVERLEAF_HEADER_IMAGE_URL still overrides for site operators.
+  settings.nav.custom_logo = '/logo_full.svg'
 }
 
 if (process.env.OVERLEAF_HEADER_IMAGE_URL_LIGHT != null) {
