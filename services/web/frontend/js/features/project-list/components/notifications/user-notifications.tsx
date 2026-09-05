@@ -3,7 +3,6 @@ import Common from './groups/common'
 import Institution from './groups/institution'
 import ConfirmEmail from './groups/confirm-email'
 import ReconfirmationInfo from './groups/affiliation/reconfirmation-info'
-import GroupSsoSetupSuccess from './groups/group-sso-setup-success'
 import AccessibilitySurveyBanner from './accessibility-survey-banner'
 import {
   DeprecatedBrowser,
@@ -23,7 +22,6 @@ function UserNotifications() {
       aria-label={t('notification')}
     >
       <ul className="list-unstyled">
-        <GroupSsoSetupSuccess />
         <Common />
         <Institution />
         <ConfirmEmail />

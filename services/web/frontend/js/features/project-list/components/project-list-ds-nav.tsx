@@ -1,7 +1,6 @@
 import classNames from 'classnames'
 import { useProjectListContext } from '../context/project-list-context'
 import { useTranslation } from 'react-i18next'
-import CurrentPlanWidget from './current-plan-widget/current-plan-widget'
 import NewProjectButton from './new-project-button'
 import ProjectListTable from './table/project-list-table'
 import UserNotifications from './notifications/user-notifications'
@@ -115,16 +114,9 @@ export function ProjectListDsNav() {
                   )}
                   <div className="project-tools">
                     <div className="d-none d-md-block">
-                      {selectedProjects.length === 0 ? (
-                        showTrashHeader ? null : (
-                          <CurrentPlanWidget />
-                        )
-                      ) : (
+                      {selectedProjects.length === 0 ? null : (
                         <ProjectTools />
                       )}
-                    </div>
-                    <div className="d-md-none">
-                      {!showTrashHeader && <CurrentPlanWidget />}
                     </div>
                   </div>
                 </div>
