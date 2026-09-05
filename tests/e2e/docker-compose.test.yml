@@ -1,0 +1,139 @@
+# Disposable e2e test stack — the ONLY server the e2e suite runs against
+# (owner decision 2026-09-05: never the production box).
+#
+# Mirrors the known-good production recipe (compose_cep) with test overrides:
+#  - fresh mongo (replica set, like upstream develop) + redis sidecars
+#  - plain HTTP on 127.0.0.1:7420 (no nginx/TLS, no cookie-secure)
+#  - bootstrap secrets generated per stack into .env.test (gitignored)
+#  - LLM / git-bridge / webdav / dropbox / zotero / languagetool enabled so
+#    the admin-site + BYO + sync specs exercise the real module paths
+#  - texlive compile works via the host docker socket (same as production)
+name: ol-e2e
+
+services:
+  mongo:
+    # 6.0: fresh mongo 8.x builds are kernel-incompatible on this host
+    # (7.0.0 kernel: SERVER-121912 gate on 8.3-late/8.4, hard segfaults
+    # under load on 8.0/8.2) — verified 6.0 survives the migration load.
+    # The image's "Mongo >= 8.0" boot check is overridden via OL_MIN_MONGO_*
+    # (production default unchanged; see check-mongodb.mjs).
+    image: mongo:6.0
+    command: --replSet overleaf
+    volumes:
+      - mongo-data:/data/db
+      # in-repo fixture (this tree lacks bin/shared; upstream equivalent)
+      - ./stack/mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js:ro
+    # healthy = queryable as PRIMARY (not just process-up)
+    healthcheck:
+      test: ['CMD', 'mongosh', '127.0.0.1:27017/--quiet', '--eval', 'db.hello().isWritablePrimary ? 1 : 3']
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+    extra_hosts:
+      - 'mongo:127.0.0.1'
+    networks: [e2e]
+
+  redis:
+    image: redis:8.6-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [e2e]
+
+  overleaf:
+    image: ${OVERLEAF_IMAGE:-sharelatex/sharelatex:ext-6.3.0-port}
+    hostname: overleaf
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:7420:80'
+    environment:
+      # ---- bootstrap secrets (stack-generated, .env.test) ----
+      CRYPTO_RANDOM: ${CRYPTO_RANDOM}
+      WEB_API_PASSWORD: ${WEB_API_PASSWORD}
+      SHARED_SERVICE_TOKEN: ${SHARED_SERVICE_TOKEN}
+      OT_JWT_AUTH_KEY: ${OT_JWT_AUTH_KEY}
+      OVERLEAF_SESSION_SECRET: ${OVERLEAF_SESSION_SECRET}
+      OVERLEAF_INVITE_TOKEN_SECRET: ${OVERLEAF_INVITE_TOKEN_SECRET}
+      # test-stack only: allow mongo 6.0 (host kernel breaks fresh 8.x)
+      OL_MIN_MONGO_VERSION: '6.0'
+      OL_MIN_MONGO_FCV: '6.0'
+      LLM_KEY_SECRET: ${LLM_KEY_SECRET}
+      # internal service auth (history-v1 requires these under NODE_ENV=production;
+      # project-history & web authenticate with the same values)
+      STAGING_PASSWORD: ${SHARED_SERVICE_TOKEN}
+      V1_HISTORY_PASSWORD: ${SHARED_SERVICE_TOKEN}
+      OT_JWT_AUTH_ALG: HS256
+      MONGO_CONNECTION_STRING: mongodb://mongo:27017/sharelatex?replicaSet=overleaf
+      # ---- DB / infra ----
+      OVERLEAF_MONGO_URL: mongodb://mongo:27017/sharelatex?replicaSet=overleaf
+      REDIS_HOST: redis
+      OVERLEAF_REDIS_HOST: redis
+      OVERLEAF_FILESTORE_MIGRATION_LEVEL: '2'
+      # ---- plain-HTTP test surface (no proxy) ----
+      OVERLEAF_BEHIND_PROXY: 'false'
+      OVERLEAF_SITE_URL: http://127.0.0.1:7420
+      # the registration domain gate treats an EMPTY list as "block all"
+      # (CE quirk: `allowedDomains && !list.some(...)` with `[]` truthy) —
+      # allow the fixture domain explicitly:
+      OVERLEAF_ALLOWED_REGISTRATION_EMAIL_DOMAINS: e2e.test
+      PUBLIC_URL: http://127.0.0.1:7420
+      # ---- ext module gates (module paths exercised by the specs) ----
+      LLM_ENABLED: 'true'
+      LLM_ALLOW_USER_SETTINGS: 'true'
+      GIT_BRIDGE_ENABLED: 'true'
+      GIT_BRIDGE_HOST: git-bridge
+      WEBDAV_ENABLED: 'true'
+      DROPBOX_ENABLED: 'true'
+      DROPBOXINTERFACE_API_URL: http://localhost:4003
+      LANGUAGE_TOOL_URL: http://languagetool:8010
+      ZOTERO_CLIENT_KEY: e2e-dummy-client-key
+      ZOTERO_CLIENT_SECRET: e2e-dummy-client-secret
+      # fixed container constant (web + in-container githubinterface share it)
+      GITHUBINTERFACE_WORKDIR_ROOT: /var/lib/overleaf/ghif
+      LOG_LEVEL: info
+    volumes:
+      - ol-data:/var/lib/overleaf
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: bash -c 'curl -fsI --connect-timeout 5 http://localhost/login || exit 1'
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+    networks: [e2e]
+
+  git-bridge:
+    image: ${GIT_BRIDGE_IMAGE:-sharelatex/git-bridge:ext-6.3.0-port}
+    user: root
+    command: ['/server-pro-start.sh']
+    environment:
+      GIT_BRIDGE_API_BASE_URL: 'http://overleaf:3000/api/v0/'
+      GIT_BRIDGE_OAUTH2_SERVER: 'http://overleaf'
+      GIT_BRIDGE_POSTBACK_BASE_URL: 'http://git-bridge:8000'
+      GIT_BRIDGE_ROOT_DIR: '/data/git-bridge'
+    volumes:
+      - gb-data:/data/git-bridge
+    depends_on:
+      - overleaf
+    networks: [e2e]
+
+  languagetool:
+    image: erikvl87/languagetool:latest
+    networks: [e2e]
+
+volumes:
+  mongo-data:
+  ol-data:
+  gb-data:
+
+networks:
+  e2e:

@@ -1,0 +1,7 @@
+node_modules/
+.env.test
+data/
+git-bridge-data/
+playwright-report/
+test-results/
+*.log

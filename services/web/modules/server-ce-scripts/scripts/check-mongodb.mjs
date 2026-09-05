@@ -6,8 +6,22 @@ import {
 
 const { ObjectId } = mongodb
 
-const MIN_MONGO_VERSION = [8, 0]
-const MIN_MONGO_FEATURE_COMPATIBILITY_VERSION = [7, 0]
+const DEFAULT_MIN_MONGO_VERSION = [8, 0]
+const DEFAULT_MIN_MONGO_FCV = [7, 0]
+// overleaf-lab (e2e, 2026-09): host kernel 7.0 + kernel-incompatible fresh
+// mongo 8.x builds (SERVER-121912 / 8.x segfaults under load) make a
+// disposable test stack need mongo 6.0. Override the gates via env when
+// running such a stack; PRODUCTION DEFAULTS UNCHANGED (8.0 / FCV 7.0).
+function versionPair(envValue, fallback) {
+  if (!envValue) return fallback
+  const [a, b] = String(envValue).split('.').map(n => parseInt(n, 10))
+  return [a, b || 0]
+}
+const MIN_MONGO_VERSION = versionPair(process.env.OL_MIN_MONGO_VERSION, DEFAULT_MIN_MONGO_VERSION)
+const MIN_MONGO_FEATURE_COMPATIBILITY_VERSION = versionPair(
+  process.env.OL_MIN_MONGO_FCV,
+  DEFAULT_MIN_MONGO_FCV
+)
 
 // Allow ignoring admin check failures via an environment variable
 const OVERRIDE_ENV_VAR_NAME = 'ALLOW_MONGO_ADMIN_CHECK_FAILURES'

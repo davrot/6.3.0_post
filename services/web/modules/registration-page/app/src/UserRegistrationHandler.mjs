@@ -12,7 +12,15 @@ export default async function registerNewUserAndSendActivationEmail(userData) {
   let user
   try {
     const password = crypto.randomBytes(32).toString('hex')
-    user = await UserRegistrationHandler.promises.registerNewUser({ ...userData, password })
+    // overleaf-lab (e2e, 2026-09): CE 6.3.0's UserCreator REQUIRES
+    // `analyticsId` (`bug: attributes.analyticsId is missing`) — the 6.2-era
+    // copy of this module dropped it and every /register POST was 500ing.
+    // Mirrors the app-side UserRegistrationHandler which generates it.
+    user = await UserRegistrationHandler.promises.registerNewUser({
+      ...userData,
+      password,
+      analyticsId: crypto.randomUUID(),
+    })
   } catch (error) {
     if (error.message === 'EmailAlreadyRegistered') {
       logger.debug({ email: userData.email }, 'user already registered')

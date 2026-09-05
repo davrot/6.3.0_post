@@ -1,0 +1,59 @@
+# e2e suite (forgejo-style) — needs a DOCKER-CAPABLE (self-hosted) runner:
+# builds the image from this repo, raises the disposable test stack
+# (tests/e2e/docker-compose.test.yml, project ol-e2e), seeds the fixtures,
+# runs Playwright, reports. Runs against the disposable stack ONLY —
+# never the production box (owner decision 2026-09-05).
+name: e2e
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ext-6.3.0-port, '6.3.0_port']
+  push:
+    branches: [ext-6.3.0-port]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: [self-hosted, linux, x64]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Overleaf image (pinned base tag)
+        working-directory: server-ce
+        run: |
+          make build-community \
+            OVERLEAF_BASE_TAG=sharelatex/sharelatex-base:ext-6.3.0-port-16a93ea66a74bf03885b8502fb93d9d766b36795
+        # note: docker layer cache makes repeat runs cheap on a warm runner
+
+      - name: Install e2e runner deps
+        working-directory: tests/e2e
+        run: npm install --no-audit --no-fund
+
+      - name: Run the e2e suite (stack up + seed + specs)
+        working-directory: tests/e2e
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.tool_cache }}
+        run: npm test
+        # npm test = stack:up (idempotent) + playwright (globalSetup seeds
+        # the fixture users/project; reports in test-results/, HTML in
+        # playwright-report/)
+
+      - name: Stop the disposable stack
+        working-directory: tests/e2e
+        if: always()
+        run: bash scripts/stack-down.sh || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            tests/e2e/test-results/
+            tests/e2e/playwright-report/
+          if-no-files-found: ignore
