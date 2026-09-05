@@ -6,10 +6,14 @@ footer.site-footer
 			ul.site-footer-items.col-lg-9
 				if !settings.nav.hide_powered_by
 					li
-						//- year of Server Pro release, static
+						//- year of initial release, static
 						| © 2026
 						|
-						a(href='https://www.overleaf.com/for/enterprises') Powered by Overleaf
+						a(href='https://github.com/davrot/6.3.0_post') OlliTeX
+						| — a fork of
+						|
+						a(href='https://github.com/overleaf/overleaf') Overleaf Community Edition
+						| (open source, AGPLv3)
 
 					if showLanguagePicker || hasCustomLeftNav
 						li
@@ -40,4 +44,4 @@ footer.site-footer
 			.row
 				.col-12
 					p.copyright-notice
-						| Overleaf Community Edition™ is a free unsupported software that may contain vulnerabilities and used at your own risk. Use of Overleaf Community Edition™ here is not operated, supported or endorsed by Overleaf®. It has been provided "AS IS" with all liability disclaimed (to the fullest extent lawful) and all rights reserved.
+						| OlliTeX is a fork of Overleaf Community Edition™, an open-source project by Overleaf, distributed under the terms of the AGPLv3 license. This deployment is not operated, supported or endorsed by Overleaf® and is provided "AS IS" with all liability disclaimed (to the fullest extent lawful) and all rights reserved.

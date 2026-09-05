@@ -72,10 +72,11 @@ function ThinFooter({
             {showPoweredBy ? (
               <>
                 <li>
-                  {/* year of Server Pro release, static */}© 2026{' '}
-                  <a href="https://www.overleaf.com/for/enterprises">
-                    Powered by Overleaf
-                  </a>
+                  {/* year of initial release, static */}© 2026{' '}
+                  <a href="https://github.com/davrot/6.3.0_post">OlliTeX</a>{' '}
+                  — a fork of{' '}
+                  <a href="https://github.com/overleaf/overleaf">Overleaf Community Edition</a>{' '}
+                  (open source, AGPLv3)
                 </li>
                 {showLanguagePicker || hasCustomLeftNav ? <Separator /> : null}
               </>
@@ -102,10 +103,10 @@ function ThinFooter({
           <OLRow>
             <OLCol lg={12}>
               <p className="copyright-notice">
-                Overleaf Community Edition™ is a free unsupported software that
-                may contain vulnerabilities and used at your own risk. Use of
-                Overleaf Community Edition™ here is not operated, supported or
-                endorsed by Overleaf®. It has been provided "AS IS" with all
+                OlliTeX is a fork of Overleaf Community Edition™, an
+                open-source project by Overleaf, distributed under the terms
+                of the AGPLv3 license. This deployment is not operated, supported
+                or endorsed by Overleaf® and is provided "AS IS" with all
                 liability disclaimed (to the fullest extent lawful) and all
                 rights reserved.
               </p>
