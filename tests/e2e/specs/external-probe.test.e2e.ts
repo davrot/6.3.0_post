@@ -32,7 +32,10 @@ test('git host credentials resolve to a user (github/forgejo/gitea/gitlab)', asy
     const pat = String(cfg.pat || '')
     let out: { status: number; body: any }
     if (name === 'github') {
-      out = await req(`${base}/api/v3/user`, {}, { Authorization: `Bearer ${pat}`, 'user-agent': 'ollitex-e2e' })
+      // github.com → api.github.com + /user; GHE → <host>/api/v3/user
+      const ghHost = new URL(base).hostname
+      const ghUrl = ghHost === 'github.com' ? 'https://api.github.com/user' : `${base}/api/v3/user`
+      out = await req(ghUrl, {}, { Authorization: `Bearer ${pat}`, 'user-agent': 'ollitex-e2e' })
       expect(out.status, 'github /api/v3/user').toBe(200)
       const who = out.body?.login ?? out.body?.login_name
       if (user) expect(who, 'github login').toBe(user)
