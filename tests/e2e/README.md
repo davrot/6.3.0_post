@@ -98,3 +98,20 @@ Add follow-on specs to `specs/`; the stack needs no changes.
   takes effect on the NEW-PROJECT Word import after restart (env hydration).
 - **Two UIs for the same menu** (welcome inline dropdown vs list modal) with
   identical item markup — always scope clicks to the open menu/modal.
+
+## External services (credentials live on YOUR machine only)
+
+Real credentials for external services (git hosts, WebDAV, Dropbox, Zotero, LLM
+providers) live in **`credentials/config.json`** — local only, git-ignored.
+
+```sh
+cp credentials/config.json.example credentials/config.json   # then fill in + enable
+```
+
+- Template + policy + "ephemeral-token" handling: **`credentials/README.md`**
+- One-time-login services (OAuth tokens valid "for some hours"): capture once with
+  `node scripts/auth-capture.mjs --service <name> --url <login-url> ...`
+  → cached in `credentials/.auth/` (0600) with expiry; `getServiceToken()`
+  rejects stale caches with the exact re-capture command.
+- `specs/external-probe.test.e2e.ts` live-checks only the services you enabled;
+  skips cleanly when `config.json` is absent.

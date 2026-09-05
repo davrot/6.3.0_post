@@ -5,3 +5,6 @@ git-bridge-data/
 playwright-report/
 test-results/
 *.log
+# local external-service credentials (own .gitignore in credentials/ is primary)
+credentials/config.json
+credentials/.auth/
