@@ -2,12 +2,22 @@
   "name": "OlliTeX",
   "icons": [
     {
-      "src": "/overleaf-logo.svg",
+      "src": "/logo.svg",
       "type": "image/svg+xml",
       "sizes": "any"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
-  "theme_color": "#1b222c",
+  "theme_color": "#C4DDB9",
   "background_color": "#ffffff",
   "start_url": "/",
   "display": "standalone"
