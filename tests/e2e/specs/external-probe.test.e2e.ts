@@ -86,16 +86,18 @@ test('dropbox token is valid (cached or static)', async () => {
   expect(out.body?.account_id, 'dropbox account_id').toBeTruthy()
 })
 
-test('zotero API key resolves', async () => {
+test('zotero API key resolves the library', async () => {
   test.skip(!externalEnabled('zotero'), 'zotero not enabled — see credentials/README.md')
   const cfg = getExternal('zotero')!
   const base = String(cfg.baseUrl).replace(/\/$/, '')
-  const out = await req(
-    `${base}/api/users/0/groups`,
-    {},
-    { ZOTERO_API_KEY: String(cfg.apiKey), ZOTERO_USER: String(cfg.username || '') },
-  )
-  expect(out.status, 'zotero /groups').toBe(200)
+  // zotero.org API: /api/users/{id} (or /api/users/byUsername/{name}); key header suffices,
+  // ZOTERO_USER header only needed for byUsername lookups
+  const id = cfg.userId ? String(cfg.userId) : ''
+  const username = cfg.username ? String(cfg.username) : ''
+  const url = id ? `${base}/api/users/${id}` : username ? `${base}/api/users/byUsername/${username}` : null
+  test.skip(!url, `zotero: needs "userId" or "username" in credentials/config.json`)
+  const out = await req(url, {}, { ZOTERO_API_KEY: String(cfg.apiKey), ...(username ? { ZOTERO_USER: username } : {}) })
+  expect(out.status, 'zotero /api/users/{id}').toBe(200)
 })
 
 test('LLM provider answers /models', async () => {
