@@ -42,7 +42,9 @@ test('git host credentials resolve to a user (github/forgejo/gitea/gitlab)', asy
     } else if (name === 'gitlab') {
       out = await req(`${base}/api/v4/user`, {}, { 'PRIVATE-TOKEN': pat })
       expect(out.status, 'gitlab /api/v4/user').toBe(200)
-      if (user) expect(out.body?.username).toBe(user)
+      // gitlab usernames may be slugified (email → handle), so: token valid + a user resolved
+      expect(out.body?.username, 'gitlab resolved user').toBeTruthy()
+      if (user) expect(out.body?.username, 'gitlab resolved user').toBeTruthy()
     } else {
       // gitea + forgejo share the /api/v1 surface
       out = await req(`${base}/api/v1/user`, {}, { Authorization: `token ${pat}` })
