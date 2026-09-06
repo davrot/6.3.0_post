@@ -555,6 +555,8 @@
  "adminSite.miscNotifDelay": "",
  "adminSite.miscNotifDelayHint": "",
  "adminSite.miscNotifications": "",
+ "adminSite.miscPythonRunner": "",
+ "adminSite.miscPythonRunnerToggle": "",
  "adminSite.scBodySizeHint": "",
  "adminSite.scBodySizeLimit": "",
  "adminSite.services": "",

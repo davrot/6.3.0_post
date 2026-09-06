@@ -464,6 +464,8 @@
   "adminSite.miscNotifDelayHint": "Minimum delay between project changes before the e-mail notification is sent (ms). Applies on the next container cycle.",
   "adminSite.miscNotifications": "Notifications",
   "adminSite.miscPdfCaching": "Enable PDF caching (ENABLE_PDF_CACHING)",
+  "adminSite.miscPythonRunner": "Python runner",
+  "adminSite.miscPythonRunnerToggle": "Enable the browser-based Python split editor for .py files (python-runner module: Pyodide in a Worker — no server-side execution). Applies on the next container cycle.",
   "adminSite.miscProjDelay": "Project hard-deletion delay days (OVERLEAF_PROJECT_HARD_DELETION_DELAY)",
   "adminSite.miscUserDelay": "User hard-deletion delay days (OVERLEAF_USER_HARD_DELETION_DELAY)",
   "adminSite.miscellaneous": "Miscellaneous",

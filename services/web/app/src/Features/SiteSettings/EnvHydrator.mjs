@@ -202,6 +202,11 @@ const SECTION_ENV_MAPS = {
     OVERLEAF_USER_HARD_DELETION_DELAY: toDaysMs(misc.userHardDeletionDelayDays),
     OVERLEAF_HISTORY_RESTORE: b(misc.historyRestore),
     ENABLE_PDF_CACHING: b(misc.enablePdfCaching),
+    // python-runner CE feature flag (admin/site misc.pythonRunner — the
+    // admin toggle is the canonical control; ENABLE_PYTHON_RUNNER in
+    // compose is only a seed for first boot, see SiteSettingsManager misc
+    // seed). Read by settings.defaults splitTestOverrides['overleaf-code'].
+    ENABLE_PYTHON_RUNNER: b(misc.pythonRunner),
     MAX_UPLOAD_SIZE: misc.maxUploadSizeMiB ? String(misc.maxUploadSizeMiB) : '',
     MAX_ENTITIES_PER_PROJECT: misc.maxEntitiesPerProject
       ? String(misc.maxEntitiesPerProject)

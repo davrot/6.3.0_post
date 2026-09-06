@@ -251,6 +251,7 @@ export const SECTION_KNOWN_KEYS = {
     'userHardDeletionDelayDays',
     'historyRestore',
     'enablePdfCaching',
+    'pythonRunner',
     'maxUploadSizeMiB',
     'maxEntitiesPerProject',
     'defaultLatexCompiler',
@@ -633,6 +634,10 @@ function envSeeds(env, coreSettings, stored) {
         delayDaysFromMs(env, 'OVERLEAF_USER_HARD_DELETION_DELAY', 90),
       historyRestore: boolFromEnv(env.OVERLEAF_HISTORY_RESTORE) ?? false,
       enablePdfCaching: boolFromEnv(env.ENABLE_PDF_CACHING) ?? true,
+      // python-runner module (CE feature flag; admin/site is the control
+      // point since 2026-09-06 — the EnvHydrator maps this back to
+      // ENABLE_PYTHON_RUNNER before the Settings snapshot freezes):
+      pythonRunner: boolFromEnv(env.ENABLE_PYTHON_RUNNER) ?? false,
       maxUploadSizeMiB: env.MAX_UPLOAD_SIZE
         ? (parseInt(env.MAX_UPLOAD_SIZE, 10) || 50) : 50,
       maxEntitiesPerProject: env.MAX_ENTITIES_PER_PROJECT
@@ -1129,6 +1134,7 @@ export function validateMiscSection(value) {
     'disableChat',
     'historyRestore',
     'enablePdfCaching',
+    'pythonRunner',
   ]
   for (const f of booleans) {
     if (value[f] !== undefined && typeof value[f] !== 'boolean') {

@@ -753,6 +753,10 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
   const [userDelay, setUserDelay] = useState(String(initial.userHardDeletionDelayDays ?? 90))
   const [historyRestore, setHistoryRestore] = useState(Boolean(initial.historyRestore))
   const [pdfCaching, setPdfCaching] = useState(initial.enablePdfCaching !== false)
+  // python-runner (browser-side Python split editor) — enabled by default
+  // only where the operator flipped it on in admin/site (D2: applies on
+  // the next container cycle; ENABLE_PYTHON_RUNNER seeds the first boot).
+  const [pythonRunner, setPythonRunner] = useState(Boolean(initial.pythonRunner))
   // Limits
   const [maxUpload, setMaxUpload] = useState(String(initial.maxUploadSizeMiB ?? 50))
   const [maxEntities, setMaxEntities] = useState(String(initial.maxEntitiesPerProject ?? 2000))
@@ -776,6 +780,7 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
       userHardDeletionDelayDays: parseInt(userDelay, 10),
       historyRestore,
       enablePdfCaching: pdfCaching,
+      pythonRunner,
       maxUploadSizeMiB: parseInt(maxUpload, 10),
       maxEntitiesPerProject: parseInt(maxEntities, 10),
       defaultLatexCompiler: compiler,
@@ -822,6 +827,9 @@ export function MiscTab ({ initial }: { initial: SectionValue }) {
 
       <SectionTitle>{t('adminSite.miscCompile')}</SectionTitle>
       <Two a={<Field id="misc-compiler" label={t('adminSite.miscCompiler')} value={compiler} onChange={setCompiler} placeholder="pdflatex" hint={t('adminSite.restartHint')} />} />
+
+      <SectionTitle>{t('adminSite.miscPythonRunner', 'Python runner')}</SectionTitle>
+      <Two a={<Switch id="misc-python-runner" checked={pythonRunner} onChange={setPythonRunner} label={t('adminSite.miscPythonRunnerToggle', 'Enable the browser-based Python split editor for .py files (python-runner module).')} hint={t('adminSite.restartHint')} />} />
 
       <SectionTitle>{t('adminSite.miscNotifications')}</SectionTitle>
       <Two a={<Field id="misc-notif-delay" label={t('adminSite.miscNotifDelay')} type="number" value={notifDelay} onChange={setNotifDelay} placeholder="30000" hint={t('adminSite.miscNotifDelayHint', 'Delay between project changes before the e-mail notification is sent (ms). Applies on the next container cycle.')} />} />

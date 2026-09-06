@@ -91,7 +91,41 @@ async function newProjectWithPython(
   return projectId
 }
 
+/**
+ * admin/site control (owner 2026-09-06, D2 pattern): misc.pythonRunner is
+ * the canonical switch — hydrated to ENABLE_PYTHON_RUNNER at boot
+ * (EnvHydrator) and read by the splitTestOverrides['overleaf-code'] CE
+ * flag. Assert the admin round-trip works (GET -> modify -> PUT -> GET).
+ * NOTE: like every D2 section, the FUNCTIONAL flag switches on the next
+ * container cycle — the test stack therefore also carries
+ * ENABLE_PYTHON_RUNNER=true in compose (seed path); what this test proves
+ * is the admin surface, not a live switch.
+ */
+async function adminPythonToggle(
+  context: import('playwright').APIRequestContext,
+  page: import('playwright').Page
+): Promise<void> {
+  const res = await authFetch(context, page, 'GET', '/admin/site-settings')
+  expect(res.status()).toBe(200)
+  const all = await res.json()
+  const misc = { ...all.misc, pythonRunner: true }
+  const put = await authFetch(context, page, 'PUT', '/admin/site-settings/misc', misc)
+  expect(put.status(), `admin/site misc.pythonRunner save (got ${await put.text()})`).toBeLessThan(300)
+  const after = await authFetch(context, page, 'GET', '/admin/site-settings')
+  expect(((await after.json()).misc || {}).pythonRunner, 'admin/site round-trip').toBe(true)
+}
+
 test.describe.configure({ mode: 'serial' })
+
+test('admin/site: python-runner toggle persists (misc.pythonRunner round-trip)', async ({
+  page,
+  context,
+}) => {
+  await loginRobust(page, ADMIN.email, ADMIN.password)
+  await page.goto('/project', { waitUntil: 'domcontentloaded' })
+  await adminPythonToggle(context, page)
+})
+
 
 test('python split view is NOT rendered for non-.py documents', async ({
   page,
