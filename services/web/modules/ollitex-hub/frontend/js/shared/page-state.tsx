@@ -56,7 +56,7 @@ export function EmptyState({
   return (
     <Stack align="center" gap="xs" py="xl" ta="center" style={{ maxWidth: 460, margin: '0 auto' }}>
       <span
-        className="material-symbols-rounded"
+        className="material-symbols"
         style={{ fontSize: 40, color: 'var(--mantine-color-gray-4)' }}
       >
         {icon}

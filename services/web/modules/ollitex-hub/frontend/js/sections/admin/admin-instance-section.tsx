@@ -48,7 +48,7 @@ function KpiCard({ label, value, icon }: { label: string; value: string; icon: s
             {value}
           </Title>
         </div>
-        <span className="material-symbols-rounded" style={{ fontSize: 28, color: 'var(--mantine-color-ollitex-6)' }}>
+        <span className="material-symbols" style={{ fontSize: 28, color: 'var(--mantine-color-ollitex-6)' }}>
           {icon}
         </span>
       </Group>

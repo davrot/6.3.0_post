@@ -49,12 +49,16 @@ export default function TemplatesSection() {
   const [projectName, setProjectName] = useState('')
   const [creating, setCreating] = useState(false)
   const [createErr, setCreateErr] = useState<string | null>(null)
+  const [categories, setCategories] = useState<Array<{ key: string; name: string }>>([])
+  const [activeCategory, setActiveCategory] = useState('none')
   const notifications = useNotifications()
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (category = 'none') => {
     setError(null)
     try {
-      const data = await getJSON(`/api/templates?by=${encodeURIComponent(sort)}&order=${sortOrder}&category=none`)
+      const data = await getJSON(
+        `/api/templates?by=${encodeURIComponent(sort)}&order=${sortOrder}&category=${encodeURIComponent(category)}`
+      )
       const list = Array.isArray(data?.templates) ? data.templates.map(normalize).filter(t => t.id) : []
       setTemplates(list)
     } catch (err: any) {
@@ -64,8 +68,24 @@ export default function TemplatesSection() {
   }, [sort, sortOrder])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void load(activeCategory)
+  }, [load, activeCategory])
+
+  useEffect(() => {
+    let alive = true
+    getJSON('/api/template/categories')
+      .then((data: any) => {
+        if (!alive) return
+        const list = Array.isArray(data) ? data : Array.isArray(data?.categories) ? data.categories : []
+        setCategories(list.filter((c: any) => c && typeof c.key === 'string'))
+      })
+      .catch(() => {
+        if (alive) setCategories([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     if (!templates) return []
@@ -105,7 +125,61 @@ export default function TemplatesSection() {
   if (!templates && !error) return <PageLoading label="Loading templates…" />
 
   return (
-    <Stack gap="md">
+    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      {/* Category sub-categories (parity with the classic /templates nav). */}
+      <nav
+        aria-label="Template categories"
+        style={{
+          width: 208,
+          flexShrink: 0,
+          position: 'sticky',
+          top: 88,
+          maxHeight: 'calc(100vh - 140px)',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em', padding: '0 10px', marginBottom: 4 }}>
+          Categories
+        </Text>
+        <button
+          type="button"
+          onClick={() => setActiveCategory('none')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
+            borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13.5, textAlign: 'left',
+            background: activeCategory === 'none' ? 'var(--mantine-color-ollitex-6)' : 'transparent',
+            color: activeCategory === 'none' ? 'var(--mantine-color-white)' : 'var(--mantine-color-text)',
+          }}
+        >
+          <Icon name="layers" size={18} />
+          All templates
+        </button>
+        {categories.map(c => {
+          const isActive = activeCategory === c.key
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setActiveCategory(c.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
+                borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13.5, textAlign: 'left',
+                background: isActive ? 'var(--mantine-color-ollitex-6)' : 'transparent',
+                color: isActive ? 'var(--mantine-color-white)' : 'var(--mantine-color-text)',
+              }}
+              onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'var(--mantine-color-default-hover)' }}
+              onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+            >
+              <Icon name="auto_stories" size={18} style={{ color: isActive ? 'var(--mantine-color-white)' : 'var(--mantine-color-dimmed)' }} />
+              {c.name}
+            </button>
+          )
+        })}
+      </nav>
+      <Stack gap="md" style={{ flex: 1, minWidth: 0 }}>
       <Group justify="space-between" wrap="wrap" gap="sm">
         <TextInput
           withLeftSection
@@ -204,7 +278,7 @@ export default function TemplatesSection() {
 
       <Modal
         opened={!!using}
-        onClose={onClose}
+        onClose={() => setUsing(null)}
         size="sm"
         title={
           <Text fw={700}>Use “{using?.name}” as a template</Text>
@@ -226,15 +300,22 @@ export default function TemplatesSection() {
           </div>
           {createErr ? <Text size="sm" c="red">{createErr}</Text> : null}
           <Group justify="flex-end" gap="xs" mt="sm">
-            <Button variant="default" onClick={onClose} disabled={creating}>
+            <Button variant="default" onClick={() => setUsing(null)} disabled={creating}>
               Cancel
             </Button>
-            <Button color="ollitex" loading={creating} onClick={onCreate}>
+            <Button
+              color="ollitex"
+              loading={creating}
+              onClick={() => {
+                void useTemplate()
+              }}
+            >
               Create project
             </Button>
           </Group>
         </Stack>
       </Modal>
-    </Stack>
+      </Stack>
+    </div>
   )
 }

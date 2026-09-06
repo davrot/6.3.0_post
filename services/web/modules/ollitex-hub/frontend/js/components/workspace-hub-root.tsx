@@ -2,6 +2,7 @@ import React from 'react'
 import { Text } from '@mantine/core'
 import HubLayout, { HubNavGroup, OpenInAppLink } from '../shared/hub-layout'
 import useHashSection from '../shared/use-hash-section'
+import ThemeToggle from '../shared/theme-toggle'
 import { SectionBoundary } from './hub-shell'
 import { PageError } from '../shared/page-state'
 import ProjectsSection from '../sections/workspace/projects-section'
@@ -91,9 +92,12 @@ export default function WorkspaceHubRoot() {
       title={META[section]?.title || 'Workspace'}
       subtitle={META[section]?.subtitle}
       headerActions={
-        META[section]?.standalone ? (
-          <OpenInAppLink href={META[section].standalone as string} label={META[section].standaloneLabel as string} />
-        ) : undefined
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ThemeToggle />
+          {META[section]?.standalone ? (
+            <OpenInAppLink href={META[section].standalone as string} label={META[section].standaloneLabel as string} />
+          ) : null}
+        </div>
       }
     >
       <SectionBoundary label={META[section]?.title || section}>

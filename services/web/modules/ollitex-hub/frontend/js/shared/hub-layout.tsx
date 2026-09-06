@@ -1,15 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
-  AppShell,
-  Burger,
   Group,
-  Stack,
   Text,
   Title,
   Anchor,
-  ScrollArea,
 } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
 import Icon from './icons'
 
 export interface HubNavItem {
@@ -36,9 +31,13 @@ interface HubLayoutProps {
 }
 
 /**
- * Shared chrome for the OlliTeX hubs (/hub/workspace, /hub/admin) —
- * brand-styled Mantine 9 AppShell with a grouped left navigation and a
- * header band. Content sections render inside <AppShell.Main>.
+ * Shared chrome for the OlliTeX hubs (/hub/workspace, /hub/admin).
+ *
+ * Deliberately NOT Mantine AppShell: the AppShell CSS (offset margins,
+ * fixed rail) did not apply reliably in our bundle, which left the nav
+ * rail overlapping the content. A plain flexbox shell is deterministic:
+ *   header (sticky) / row( nav rail (own scrollbar) | main (own scrollbar) )
+ * and both panes always carry the app body color, in light and dark.
  */
 export default function HubLayout({
   brand,
@@ -51,77 +50,96 @@ export default function HubLayout({
   headerActions,
   children,
 }: HubLayoutProps) {
-  const [opened, { toggle }] = useDisclosure(true)
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+  const [railOpen, setRailOpen] = useState(true)
 
   return (
-    <AppShell
-      style={{ position: 'relative', minHeight: '100vh', background: 'var(--mantine-color-body)' }}
-      padding="md"
-      header={{ offset: false }}
-      navbar={{
-        width: 240,
-        collapsedWidth: 0,
-        collapsed: !opened,
-        breakpoint: 'lg',
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        background: 'var(--mantine-color-body)',
+        color: 'var(--mantine-color-text)',
       }}
     >
-      <AppShell.Header
+      <header
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          padding: '0 20px',
+          height: 64,
+          flexShrink: 0,
           background: 'var(--mantine-color-body)',
           borderBottom: '1px solid var(--mantine-color-border)',
-          height: 64,
           position: 'sticky',
           top: 0,
           zIndex: 100,
         }}
       >
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} hidden={isMobile ? undefined : undefined} size="md" />
-            <Group gap="xs" wrap="nowrap">
-              <span
-                aria-hidden
-                className="material-symbols-rounded"
-                style={{ fontSize: 26, color: 'var(--mantine-color-ollitex-6)' }}
-              >
-                auto_storyboard
-              </span>
-              <Stack gap={0}>
-                <Title order={4} style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
-                  {brand}
-                </Title>
-                {tagline ? (
-                  <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
-                    {tagline}
-                  </Text>
-                ) : null}
-              </Stack>
-            </Group>
-          </Group>
-          <Group gap="sm" wrap="nowrap" style={{ visibility: headerActions ? 'visible' : 'hidden' }}>
-            {headerActions}
+        <Group gap="sm" wrap="nowrap">
+          <button
+            type="button"
+            aria-label="Toggle navigation"
+            onClick={() => setRailOpen(v => !v)}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              padding: 4,
+            }}
+          >
+            <Icon name={railOpen ? 'menu_open' : 'menu'} size={22} />
+          </button>
+          <Group gap="xs" wrap="nowrap">
+            <Icon name="auto_storyboard" size={26} style={{ color: 'var(--mantine-color-ollitex-6)' }} />
+            <div>
+              <Title order={4} style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+                {brand}
+              </Title>
+              {tagline ? (
+                <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                  {tagline}
+                </Text>
+              ) : null}
+            </div>
           </Group>
         </Group>
-      </AppShell.Header>
+        <Group gap="sm" wrap="nowrap" style={{ visibility: headerActions ? 'visible' : 'hidden' }}>
+          {headerActions}
+        </Group>
+      </header>
 
-      <AppShell.Navbar bg="transparent">
-        <Stack gap="sm" p="sm" style={{ height: '100%' }}>
-          <ScrollArea type="auto" scrollbars="y" style={{ height: '100%' }}>
-            <Stack gap="xl" px="xs" py="sm">
-              {nav.map((group, gi) => (
-                <Stack key={group.label || `g${gi}`} gap="xs">
-                  {group.label ? (
-                    <Text
-                      size="xs"
-                      tt="uppercase"
-                      fw={700}
-                      c="dimmed"
-                      style={{ letterSpacing: '0.08em', padding: '0 8px' }}
-                    >
-                      {group.label}
-                    </Text>
-                  ) : null}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {railOpen ? (
+          <nav
+            aria-label="Primary"
+            style={{
+              width: 232,
+              flexShrink: 0,
+              overflowY: 'auto',
+              overscrollBehavior: 'contain',
+              background: 'var(--mantine-color-body)',
+              borderRight: '1px solid var(--mantine-color-border)',
+              padding: '12px 10px',
+            }}
+          >
+            {nav.map((group, gi) => (
+              <div key={group.label || `g${gi}`} style={{ marginBottom: 20 }}>
+                {group.label ? (
+                  <Text
+                    size="xs"
+                    tt="uppercase"
+                    fw={700}
+                    c="dimmed"
+                    style={{ letterSpacing: '0.08em', padding: '0 8px', marginBottom: 6 }}
+                  >
+                    {group.label}
+                  </Text>
+                ) : null}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {group.items.map(item => {
                     const isActive = active === item.id
                     return (
@@ -150,23 +168,21 @@ export default function HubLayout({
                           transition: 'background 120ms ease',
                         }}
                         onMouseEnter={e => {
-                          if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'var(--mantine-color-gray-1)'
+                          if (!isActive) {
+                            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--mantine-color-default-hover)'
+                          }
                         }}
                         onMouseLeave={e => {
-                          if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                          if (!isActive) {
+                            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                          }
                         }}
                       >
-                        <span
-                          className="material-symbols-rounded"
-                          style={{
-                            fontSize: 20,
-                            color: isActive
-                              ? 'var(--mantine-color-white)'
-                              : 'var(--mantine-color-gray-6)',
-                          }}
-                        >
-                          {item.icon}
-                        </span>
+                        <Icon
+                          name={item.icon}
+                          size={20}
+                          style={{ color: isActive ? 'var(--mantine-color-white)' : 'var(--mantine-color-dimmed)' }}
+                        />
                         <span style={{ flex: 1 }}>{item.label}</span>
                         {item.badge ? (
                           <span
@@ -177,8 +193,8 @@ export default function HubLayout({
                               borderRadius: 999,
                               background: isActive
                                 ? 'rgba(255,255,255,0.22)'
-                                : 'var(--mantine-color-gray-2)',
-                              color: isActive ? '#fff' : 'var(--mantine-color-gray-7)',
+                                : 'var(--mantine-color-default-hover)',
+                              color: isActive ? '#fff' : 'var(--mantine-color-dimmed)',
                             }}
                           >
                             {item.badge}
@@ -187,31 +203,31 @@ export default function HubLayout({
                       </button>
                     )
                   })}
-                </Stack>
-              ))}
-            </Stack>
-          </ScrollArea>
-        </Stack>
-      </AppShell.Navbar>
+                </div>
+              </div>
+            ))}
+          </nav>
+        ) : null}
 
-      <AppShell.Main style={{ padding: 0 }}>
-        <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', width: '100%' }}>
-          {title ? (
-            <div style={{ marginBottom: 20 }}>
-              <Title order={2} style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
-                {title}
-              </Title>
-              {subtitle ? (
-                <Text c="dimmed" mt={4} size="sm">
-                  {subtitle}
-                </Text>
-              ) : null}
-            </div>
-          ) : null}
-          {children}
-        </div>
-      </AppShell.Main>
-    </AppShell>
+        <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', background: 'var(--mantine-color-body)' }}>
+          <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+            {title ? (
+              <div style={{ marginBottom: 20 }}>
+                <Title order={2} style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+                  {title}
+                </Title>
+                {subtitle ? (
+                  <Text c="dimmed" mt={4} size="sm">
+                    {subtitle}
+                  </Text>
+                ) : null}
+              </div>
+            ) : null}
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }
 
@@ -225,9 +241,7 @@ export function OpenInAppLink({ href, label }: { href: string; label: string }) 
       style={{ textDecoration: 'none' }}
     >
       <Group gap={6}>
-        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>
-          open_in_new
-        </span>
+        <Icon name="open_in_new" size={16} />
         {label}
       </Group>
     </Anchor>

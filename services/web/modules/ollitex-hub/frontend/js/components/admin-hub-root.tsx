@@ -3,6 +3,7 @@ import { Text } from '@mantine/core'
 import HubLayout, { type HubNavGroup } from '../shared/hub-layout'
 import useHashSection from '../shared/use-hash-section'
 import Icon from '../shared/icons'
+import ThemeToggle from '../shared/theme-toggle'
 import AdminInstanceSection from '../sections/admin/admin-instance-section'
 import AdminUsersSection from '../sections/admin/admin-users-section'
 import AdminProjectsSection from '../sections/admin/admin-projects-section'
@@ -164,7 +165,7 @@ export default function AdminHubRoot() {
   return (
     <HubLayout
       brand="OlliTeX"
-      tagline="Admin hub"
+      tagline="Instance administration"
       nav={NAV_GROUPS}
       active={section}
       onSelect={handleSectionChange}
@@ -172,6 +173,7 @@ export default function AdminHubRoot() {
       subtitle="Users, projects, templates, AI, and site configuration."
       headerActions={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ThemeToggle />
           <a
             href="/admin"
             target="_blank"
@@ -185,7 +187,7 @@ export default function AdminHubRoot() {
               gap: 6,
             }}
           >
-            <Icon name="open_in_new" size={16} /> Legacy admin
+            <Icon name="open_in_new" size={16} /> Classic admin
           </a>
         </div>
       }

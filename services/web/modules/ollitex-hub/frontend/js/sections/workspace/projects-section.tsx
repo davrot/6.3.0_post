@@ -67,13 +67,31 @@ export default function ProjectsSection() {
   const [newErr, setNewErr] = useState<string | null>(null)
   const [toDelete, setToDelete] = useState<Project | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'owned' | 'shared' | 'archived'>('all')
+  const [tagId, setTagId] = useState<string | null>(null)
+  const [tags, setTags] = useState<Array<{ _id?: string; id?: string; name?: string }>>([])
+  const [tagInputOpen, setTagInputOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [creatingTag, setCreatingTag] = useState(false)
   const notifications = useNotifications()
 
-  const load = useCallback(async () => {
+  const buildFilters = (f: string, tag: string | null) => {
+    const out: Record<string, unknown> = {}
+    if (f === 'owned') out.ownedByUser = true
+    if (f === 'shared') out.sharedWithUser = true
+    if (f === 'archived') out.archived = true
+    if (tag != null) out.tag = tag
+    return out
+  }
+
+  const load = useCallback(async (f: 'all' | 'owned' | 'shared' | 'archived' = 'all', tag: string | null = null) => {
     setError(null)
     try {
       const data = await postJSON('/api/project', {
-        body: { sort: { by: 'lastUpdated', order: 'desc' } },
+        body: {
+          filters: buildFilters(f, tag),
+          sort: { by: 'lastUpdated', order: 'desc' },
+        },
       })
       setProjects(Array.isArray(data?.projects) ? data.projects : [])
     } catch (err: any) {
@@ -83,7 +101,7 @@ export default function ProjectsSection() {
   }, [])
 
   useEffect(() => {
-    void load()
+    void load(filter, tagId)
     void (async () => {
       try {
         const data = await getJSON('/api/templates?by=name&order=asc&category=none')
@@ -97,7 +115,44 @@ export default function ProjectsSection() {
         setTemplates([])
       }
     })()
-  }, [load])
+  }, [load, filter, tagId])
+
+  useEffect(() => {
+    let alive = true
+    getJSON('/tag')
+      .then((data: any) => {
+        if (alive && Array.isArray(data?.tags)) setTags(data.tags)
+        else if (alive && Array.isArray(data)) setTags(data)
+      })
+      .catch(() => {
+        if (alive) setTags([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const createTag = async () => {
+    const name = newTagName.trim()
+    if (!name) return
+    setCreatingTag(true)
+    try {
+      await postJSON('/tag', { body: { name } })
+      setNewTagName('')
+      setTagInputOpen(false)
+      // refresh the tag list and re-run the current view (tag unchanged)
+      const data: any = await getJSON('/tag')
+      setTags(Array.isArray(data?.tags) ? data.tags : Array.isArray(data) ? data : [])
+    } catch (err: any) {
+      notifications.showNotification({
+        color: 'red',
+        title: 'Could not create tag',
+        message: (err?.data?.message as string) || 'Please try again.',
+      })
+    } finally {
+      setCreatingTag(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!projects) return []
@@ -124,7 +179,7 @@ export default function ProjectsSection() {
         window.location.assign(`/project/${id}`)
         return
       }
-      load()
+      void load(filter, tagId)
     } catch (err: any) {
       setNewErr((err?.data?.message as string) || 'Could not create the project.')
     } finally {
@@ -142,7 +197,7 @@ export default function ProjectsSection() {
       })
       notifications.show({ message: `Deleted “${toDelete.name}”.`, color: 'gray' })
       setToDelete(null)
-      await load()
+      await load(filter, tagId)
     } catch (err: any) {
       notifications.show({
         message: (err?.data?.message as string) || 'Delete failed.',
@@ -158,6 +213,80 @@ export default function ProjectsSection() {
 
   return (
     <Stack gap="md">
+      {/* Sub-categories (parity with the classic /project sidebar): view
+          filters + organize tags (create / select / clear). */}
+      <Group gap={6} wrap="wrap">
+        {(
+          [
+            ['all', 'Projects'],
+            ['owned', 'Your projects'],
+            ['shared', 'Shared with you'],
+            ['archived', 'Archived projects'],
+          ] as const
+        ).map(([key, label]) => (
+          <Button
+            key={key}
+            size="xs"
+            variant={filter === key && !tagId ? 'filled' : 'default'}
+            color="ollitex"
+            disabled={creating || creatingTag}
+            onClick={() => {
+              setTagId(null)
+              setFilter(key)
+            }}
+          >
+            {label}
+          </Button>
+        ))}
+      </Group>
+      <Group gap={6} wrap="wrap" align="center">
+        <Text size="xs" fw={700} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
+          Organize Tags
+        </Text>
+        {tags.map(t => (
+          <Button
+            key={t?._id || t?.id}
+            size="xs"
+            variant={tagId === (t?._id || t?.id) ? 'filled' : 'default'}
+            color="ollitex"
+            disabled={creating || creatingTag}
+            onClick={() => setTagId(tagId === (t?._id || t?.id) ? null : t?._id || t?.id)}
+          >
+            {t?.name}
+          </Button>
+        ))}
+        {tagInputOpen ? null : (
+          <Button
+            size="xs"
+            variant="subtle"
+            leftSection={<Icon name="add" size={15} />}
+            onClick={() => setTagInputOpen(true)}
+          >
+            New tag
+          </Button>
+        )}
+        {tagInputOpen ? (
+          <Group gap={4} wrap="nowrap">
+            <TextInput
+              value={newTagName}
+              onChange={e => setNewTagName(e.currentTarget.value)}
+              placeholder="Tag name"
+              size="xs"
+              style={{ width: 160 }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') void createTag()
+              }}
+            />
+            <Button size="xs" color="ollitex" loading={creatingTag} onClick={() => void createTag()} disabled={!newTagName.trim()}>
+              Add
+            </Button>
+            <Button size="xs" variant="subtle" onClick={() => { setTagInputOpen(false); setNewTagName('') }}>
+              Cancel
+            </Button>
+          </Group>
+        ) : null}
+      </Group>
+
       <Group justify="space-between" wrap="wrap" gap="sm">
         <TextInput
           leftSection={<Icon name="search" size={18} />}
@@ -183,7 +312,7 @@ export default function ProjectsSection() {
       </Group>
 
       {error ? (
-        <PageError label="Couldn’t load projects" detail={error} onRetry={() => void load()} />
+        <PageError label="Couldn’t load projects" detail={error} onRetry={() => void load(filter, tagId)} />
       ) : null}
 
       {projects && filtered.length === 0 ? (

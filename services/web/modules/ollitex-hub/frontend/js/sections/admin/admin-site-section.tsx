@@ -557,12 +557,24 @@ export default function AdminSiteSection() {
   if (!settings) return <PageLoading label="Loading site settings…" />
 
   return (
-    <AppShell style={{ height: 'auto', minHeight: 520 }} padding="xs">
-      <AppShell.Navbar p="xs" wd={248}>
+    <div style={{ display: 'flex', minHeight: 520, alignItems: 'stretch' }}>
+      <nav
+        aria-label="Site settings sections"
+        style={{
+          width: 248,
+          flexShrink: 0,
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          maxHeight: 'calc(100vh - 120px)',
+          padding: '4px 6px',
+          borderRight: '1px solid var(--mantine-color-border)',
+          background: 'var(--mantine-color-body)',
+        }}
+      >
         <Stack gap="xs">
           {Object.entries(sectionItems).map(([group, items]) => (
             <div key={group}>
-              <Text size="xs" ff="monospace" ta="uppercase" c="dimmed" mt="md" mb={6} pl={8}>
+              <Text size="xs" tt="uppercase" fw={700} c="dimmed" mt="md" mb={6} pl={8} style={{ letterSpacing: '0.08em' }}>
                 {group}
               </Text>
               {items.map(it => (
@@ -577,32 +589,37 @@ export default function AdminSiteSection() {
                     padding: '8px 10px',
                     borderRadius: 9,
                     fontSize: 13.5,
-                    color: active === it.id ? 'var(--mantine-color-red-7)' : 'var(--mantine-color-default-hover-filled)',
-                    background: active === it.id ? 'var(--mantine-color-light-red)' : 'transparent',
+                    background: active === it.id ? 'var(--mantine-color-ollitex-6)' : 'transparent',
+                    color: active === it.id ? 'var(--mantine-color-white)' : 'var(--mantine-color-text)',
                     transition: 'background 120ms ease',
                   }}
+                  onMouseEnter={e => {
+                    if (active !== it.id) (e.currentTarget as HTMLButtonElement).style.background = 'var(--mantine-color-default-hover)'
+                  }}
+                  onMouseLeave={e => {
+                    if (active !== it.id) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+                  }}
                 >
-                  <Icon name={it.icon} size={18} style={{ opacity: 0.85 }} />
+                  <Icon
+                    name={it.icon}
+                    size={18}
+                    style={{ color: active === it.id ? 'var(--mantine-color-white)' : 'var(--mantine-color-dimmed)' }}
+                  />
                   {it.label}
                 </UnstyledButton>
               ))}
             </div>
           ))}
         </Stack>
-      </AppShell.Navbar>
-      <AppShell.Main p="xs" offsetSidebar>
+      </nav>
+      <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', maxHeight: 'calc(100vh - 120px)', padding: 12, background: 'var(--mantine-color-body)' }}>
         <Stack gap="md" maw={920}>
-          <Group gap={8} wrap="nowrap">
-            <Text fw={700} size="lg" ff="monospace">
-              {meta?.label}
-            </Text>
-            <Text size="xs" c="dimmed" style={{ fontFamily: 'var(--mantine-font-family-mono)' }}>
-              section: {active}
-            </Text>
-          </Group>
+          <Text fw={700} size="lg">
+            {meta?.label}
+          </Text>
           {renderContent()}
         </Stack>
-      </AppShell.Main>
-    </AppShell>
+      </main>
+    </div>
   )
 }

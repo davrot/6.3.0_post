@@ -4,19 +4,45 @@ import { Notifications } from '@mantine/notifications'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 import { ollitexTheme } from './ollitex-theme'
-import { useOllitexColorScheme } from './use-ollitex-color-scheme'
+import {
+  currentColorScheme,
+  onColorSchemeChange,
+  setTheme,
+} from './overall-theme'
 
 /**
  * Shared Mantine 9.6.0 shell for OlliTeX pages (hubs, settings, admin).
- * - brand tokens (ollitex theme: deep blue H217, Noto Sans, 8px radius)
- * - dark/light bridged live to our body[data-theme] (OL theme pickers keep working)
+ * - brand tokens (OL green primary, neutral surfaces, Noto Sans, 8px radius)
+ * - light/dark follows the user's overall theme preference (Dark/Light/
+ *   System, ace.overallTheme) live: the colorSchemeManager below is bound
+ *   to the shared overall-theme store, so toggling anywhere re-renders the
+ *   provider (Mantine subscribes to manager.subscribe)
  * - Mantine notifications baked in for all pages using this provider
  */
-export default function OlliTProvider({ children }: { children: React.ReactNode }) {
-  const colorScheme = useOllitexColorScheme()
 
+// Mantine 9 provider contract: get/set/clear/subscribe/unsubscribe.
+// We bridge it to OlliTeX's theme store (source of truth: ace.overallTheme,
+// persisted via POST /user/settings).
+const hubColorSchemeManager = {
+  get: (_default?: unknown) => currentColorScheme(),
+  set: (scheme?: unknown) => {
+    if (scheme !== 'light' && scheme !== 'dark') return
+    if (currentColorScheme() === scheme) return // already applied — no-op
+    void setTheme(scheme === 'light' ? 'light-' : '')
+  },
+  clear: () => {},
+  subscribe: (fn: (scheme?: unknown) => void) =>
+    onColorSchemeChange(value => fn((value as string) || currentColorScheme())),
+  unsubscribe: () => {},
+}
+
+export default function OlliTProvider({ children }: { children: React.ReactNode }) {
   return (
-    <MantineProvider theme={ollitexTheme} defaultColorScheme={colorScheme}>
+    <MantineProvider
+      theme={ollitexTheme}
+      defaultColorScheme={currentColorScheme()}
+      colorSchemeManager={hubColorSchemeManager}
+    >
       <Notifications value={{ position: 'bottom-right', autoClose: true, duration: 4000, zIndex: 1200 }} />
       {children}
     </MantineProvider>
