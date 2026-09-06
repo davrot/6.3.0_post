@@ -1180,12 +1180,6 @@ function buildSettings() {
         '../modules/latex-editor/frontend/js/components/latex-editor-toolbar-button'
       ),
 
-      // python-runner module (ported from ayakaleaf-pro): "files saved" / error
-      // toasts for browser-side Python execution output files.
-      Path.resolve(
-        __dirname,
-        '../modules/python-runner/frontend/js/components/editor/python/python-output-toasts'
-      ),
 ],
     rootContextProviders: [
       Path.resolve(
@@ -1328,6 +1322,18 @@ function buildSettings() {
       Path.resolve(
         __dirname,
         '../frontend/js/features/pdf-preview/components/synctex-toasts'
+      ),
+      // python-runner module (ported from ayakaleaf-pro): "files saved" /
+      // error toasts for browser-side Python execution output files.
+      // NOTE: this is a toast GENERATOR list (export default =
+      // GlobalToastGeneratorEntry[]), which the IDE consumes via the
+      // `toastGenerators` key in global-toasts.tsx. It must NOT be in
+      // sourceEditorToolbarEndButtons: that list is rendered as React
+      // COMPONENTS, and an array-as-type throws React error #130 and
+      // destroys the whole editor tree (regression fixed 2026-09-06).
+      Path.resolve(
+        __dirname,
+        '../modules/python-runner/frontend/js/components/editor/python/python-output-toasts'
       ),
     ],
     editorSidebarComponents: [
