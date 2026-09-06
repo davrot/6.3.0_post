@@ -71,7 +71,7 @@ export function ThemeToggleButton({ className }: { className?: string }) {
 // Per-section error boundary: a crashing section must render its own error
 // box, never take down the whole hub (the user manager crashed on a missing
 // page-meta before this boundary existed, which blanked the entire page).
-class SectionBoundary extends Component<
+export class SectionBoundary extends Component<
   { children: ReactNode; label: string },
   { error: Error | null }
 > {

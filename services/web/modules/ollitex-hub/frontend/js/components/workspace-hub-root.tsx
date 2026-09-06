@@ -1,122 +1,114 @@
-// Workspace hub — /project + /library + /templates on one page
-// (Option B, owner 2026-09-06). Reuses the proven roots of the standalone
-// pages inside the shared kit shell.
-import React, { Suspense, lazy } from 'react'
-import { useTranslation } from 'react-i18next'
-import useWaitForI18n from '@/shared/hooks/use-wait-for-i18n'
-import { LayoutGrid, LayoutTemplate, Library, LayoutList } from 'lucide-react'
-import { Badge } from '@/shared/ui/badge'
-import { Switch } from '@/shared/ui/switch'
-import HubShell from './hub-shell'
+import React from 'react'
+import { Text } from '@mantine/core'
+import HubLayout, { HubNavGroup, OpenInAppLink } from '../shared/hub-layout'
+import useHashSection from '../shared/use-hash-section'
+import { SectionBoundary } from './hub-shell'
+import { PageError } from '../shared/page-state'
+import ProjectsSection from '../sections/workspace/projects-section'
+import LibrarySection from '../sections/workspace/library-section'
+import TemplatesSection from '../sections/workspace/templates-section'
+import MySettingsSection from '../sections/workspace/my-settings-section'
+import NotificationsSettingsSection from '../sections/workspace/notifications-settings-section'
+import LlmSettingsSection from '../sections/workspace/llm-settings-section'
 
-const ProjectsSection = lazy(
-  () => import('../../../../../frontend/js/features/project-list/components/project-list-root')
-)
-const LibrarySection = lazy(
-  () => import('../../../../bib-editor/frontend/js/library/library-root')
-)
-const GallerySection = lazy(
-  () =>
-    import(
-      '../../../../template-gallery/frontend/js/features/template-gallery/components/template-gallery-root'
-    )
-)
-const TemplateBundles = lazy(
-  () =>
-    import(
-      '../../../../template-gallery/frontend/js/features/template-bundles/template-bundles'
-    )
-)
+const NAV: HubNavGroup[] = [
+  {
+    label: 'Workspace',
+    items: [
+      { id: 'projects', label: 'Projects', icon: 'folder' },
+      { id: 'library', label: 'Reference library', icon: 'menu_book' },
+      { id: 'templates', label: 'Templates', icon: 'extension' },
+    ],
+  },
+  {
+    label: 'My settings',
+    items: [
+      { id: 'settings-account', label: 'My settings', icon: 'person' },
+      { id: 'settings-notifications', label: 'Notifications', icon: 'notifications' },
+      { id: 'settings-llm', label: 'LLM assistant', icon: 'smart_toy' },
+    ],
+  },
+]
 
-function TemplatesSection() {
-  const { t } = useTranslation()
-  const [showManage, setShowManage] = React.useState(false)
-  const user =
-    (document.querySelector('meta[name=ol-user]') as HTMLMetaElement | null)
-      ?.content || 'null'
-  let isTemplateAdmin = false
-  try {
-    isTemplateAdmin = !!(
-      JSON.parse(user).ace?.permissions?.templatesAdmin ||
-      JSON.parse(user).ace?.permissions?.adminAccess
-    )
-  } catch {
-    isTemplateAdmin = false
-  }
-
-  return (
-    <div>
-      {isTemplateAdmin && (
-        <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
-          <span className="text-sm text-muted-foreground">
-            {t('Template gallery administration (bundle save / import).')}
-          </span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{t('Manage')}</span>
-            <Switch checked={showManage} onCheckedChange={setShowManage} />
-          </div>
-        </div>
-      )}
-      {showManage && isTemplateAdmin ? (
-        <div className="p-5">
-          <Suspense fallback={<div className="p-4 text-muted-foreground">Loading…</div>}>
-            <TemplateBundles compact />
-          </Suspense>
-        </div>
-      ) : (
-        <GallerySectionContent />
-      )}
-    </div>
-  )
+const META: Record<string, { title: string; subtitle: string; standalone?: string; standaloneLabel?: string }> = {
+  projects: {
+    title: 'Projects',
+    subtitle: 'Everything you work on — create, open, and manage projects.',
+    standalone: '/project',
+    standaloneLabel: 'Full project list',
+  },
+  library: {
+    title: 'Reference library',
+    subtitle: 'Your personal bibliography, citable from any project.',
+    standalone: '/library',
+    standaloneLabel: 'Full library',
+  },
+  templates: {
+    title: 'Templates',
+    subtitle: 'Start a new project from a shared template.',
+    standalone: '/templates',
+    standaloneLabel: 'Full template gallery',
+  },
+  'settings-account': {
+    title: 'My settings',
+    subtitle: 'Account, password, appearance, and editor defaults.',
+    standalone: '/user/mysettings',
+    standaloneLabel: 'Full settings page',
+  },
+  'settings-notifications': {
+    title: 'Notification preferences',
+    subtitle: 'Control activity emails and their batching delay.',
+    standalone: '/user/notification-preferences',
+    standaloneLabel: 'Full preferences page',
+  },
+  'settings-llm': {
+    title: 'LLM assistant',
+    subtitle: 'Your bring-your-own LLM providers and models.',
+    standalone: '/user/llm-settings',
+    standaloneLabel: 'Full LLM settings',
+  },
 }
 
-function GallerySectionContent() {
+function SectionFallback({ label }: { label: string }) {
   return (
-    <div className="p-5">
-      <GallerySection />
-    </div>
+    <PageError
+      label={`The ${label} section failed to load`}
+      detail="This section hit a runtime error. The rest of the hub is unaffected — reload the page or try the standalone page."
+    />
   )
 }
 
 export default function WorkspaceHubRoot() {
-  const { t } = useTranslation()
-  const { isReady } = useWaitForI18n()
-  if (!isReady) return null
-
-  const TemplatesSectionLazy = lazy(() =>
-    Promise.resolve({ default: TemplatesSection })
-  )
-
-  const sections = [
-    {
-      id: 'projects',
-      label: t('Projects'),
-      icon: LayoutList,
-      content: ProjectsSection,
-    },
-    {
-      id: 'library',
-      label: t('Library'),
-      icon: Library,
-      content: LibrarySection,
-    },
-    {
-      id: 'templates',
-      label: t('Templates'),
-      icon: LayoutTemplate,
-      content: TemplatesSectionLazy as React.LazyExoticComponent<
-        () => React.ReactNode
-      >,
-    },
-  ]
+  const { section, select } = useHashSection('projects')
 
   return (
-    <HubShell
-      title={t('OlliTeX Workspace')}
-      icon={LayoutGrid}
-      sections={sections}
-      defaultSection="projects"
-      homeLabel={t('Home')}
-    />
+    <HubLayout
+      brand="OlliTeX"
+      tagline="Workspace"
+      nav={NAV}
+      active={section}
+      onSelect={select}
+      title={META[section]?.title || 'Workspace'}
+      subtitle={META[section]?.subtitle}
+      headerActions={
+        META[section]?.standalone ? (
+          <OpenInAppLink href={META[section].standalone as string} label={META[section].standaloneLabel as string} />
+        ) : undefined
+      }
+    >
+      <SectionBoundary label={META[section]?.title || section}>
+        {section === 'projects' ? <ProjectsSection /> : null}
+        {section === 'library' ? <LibrarySection /> : null}
+        {section === 'templates' ? <TemplatesSection /> : null}
+        {section === 'settings-account' ? <MySettingsSection /> : null}
+        {section === 'settings-notifications' ? <NotificationsSettingsSection /> : null}
+        {section === 'settings-llm' ? <LlmSettingsSection /> : null}
+        {!META[section] ? (
+          <Text size="sm" c="dimmed">
+            Unknown section “{section}”. Pick a page from the menu.
+          </Text>
+        ) : null}
+      </SectionBoundary>
+    </HubLayout>
   )
 }

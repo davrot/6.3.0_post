@@ -1,183 +1,196 @@
-// Admin hub — all admin items on one page (Option B, owner 2026-09-06).
-// Sections reuse the proven React roots of the standalone pages
-// (/admin/site, /admin/user, /admin/project, LLM settings) inside the
-// shared kit shell, so behavior stays identical — only the surface
-// unifies.
-import React, { Suspense, lazy } from 'react'
-import { useTranslation } from 'react-i18next'
-import useWaitForI18n from '@/shared/hooks/use-wait-for-i18n'
-import { getJSON } from '@/infrastructure/fetch-json'
-import {
-  Badge,
-} from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
-import { Card, CardContent } from '@/shared/ui/card'
-import HubShell from './hub-shell'
+import React, { Component, ReactNode, useCallback, useEffect, useState } from 'react'
+import { Text } from '@mantine/core'
+import HubLayout, { type HubNavGroup } from '../shared/hub-layout'
+import useHashSection from '../shared/use-hash-section'
+import Icon from '../shared/icons'
+import AdminInstanceSection from '../sections/admin/admin-instance-section'
+import AdminUsersSection from '../sections/admin/admin-users-section'
+import AdminProjectsSection from '../sections/admin/admin-projects-section'
+import AdminLlmSection from '../sections/admin/admin-llm-section'
+import AdminTemplatesSection from '../sections/admin/admin-templates-section'
+import AdminSiteSection from '../sections/admin/admin-site-section'
 
-// Server/Settings/Users icons used by the shell nav
-import { Bot, FolderKanban, Server, Settings, Users } from 'lucide-react'
+const INST = 'admin-instance'
+const USERS = 'admin-users'
+const PROJECTS = 'admin-projects'
+const LLM = 'admin-llm'
+const TPL = 'admin-templates'
+const SITE = 'admin-site'
 
-// ---- sections (lazy so each chunk loads on first visit) -----------------
+const NAV_GROUPS: HubNavGroup[] = [
+  {
+    label: 'Instance',
+    items: [
+      { id: INST, label: 'Overview & activity', icon: 'insights', badge: 'AI' },
+    ],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { id: USERS, label: 'Users', icon: 'groups' },
+      { id: PROJECTS, label: 'Projects', icon: 'folder' },
+      { id: TPL, label: 'Templates', icon: 'draft' },
+    ],
+  },
+  {
+    label: 'AI',
+    items: [{ id: LLM, label: 'LLM instance', icon: 'psychology' }],
+  },
+  {
+    label: 'Configuration',
+    items: [{ id: SITE, label: 'Site settings', icon: 'tune' }],
+  },
+]
 
-const SiteSection = lazy(
-  () => import('../../../../admin-tools/frontend/js/site-settings/site-settings-root')
-)
-const UsersSection = lazy(
-  () => import('../../../../admin-tools/frontend/js/manage-users-root')
-)
-const ProjectsSection = lazy(
-  () => import('../../../../admin-tools/frontend/js/manage-projects-root')
-)
-const LlmSection = lazy(
-  () => import('../../../../llm/frontend/js/components/llm-settings-page')
-)
-
-function InstanceSection() {
-  const { t } = useTranslation()
-  const [values, setValues] = React.useState<Record<string, number | null>>({})
-  const [failed, setFailed] = React.useState(false)
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      // /admin/instance-stats/api/series?metric=<key>&window=month →
-      // { metric, window, points: [{ day, values: number[] }] }
-      const keys = [
-        'user_count',
-        'project_count',
-        'active_users',
-        'active_projects',
-        'overleaf_storage',
-        'mongodb_storage',
-      ]
-      const out: Record<string, number | null> = {}
-      const results = await Promise.all(keys.map(async k => {
-        try {
-          const data = await getJSON('/admin/instance-stats/api/series?metric=' + k + '&window=month')
-          const pts = (data && data.points) || []
-          const last = pts[pts.length - 1]
-          const v = last && Array.isArray(last.values) ? last.values[last.values.length - 1] : null
-          out[k] = typeof v === 'number' ? v : null
-        } catch {
-          out[k] = null
-        }
-        return k
-      }))
-      void results
-      if (!cancelled) {
-        setValues(out)
-        setFailed(keys.every(k => out[k] == null))
-        setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
+function SectionBoundary({
+  name,
+  onRetry,
+  children,
+}: {
+  name: string
+  onRetry: (e: Error, info: any) => void
+  children: ReactNode
+}) {
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      return <>{children}</>
+    } catch (err) {
+      return <BoundaryErrorUI name={name} err={err} onRetry={onRetry} />
     }
-  }, [])
-
-  if (loading) {
-    return <div className="p-6 text-muted-foreground">Loading instance stats…</div>
   }
+  return <Boundary name={name} onRetry={onRetry}>{children}</Boundary>
+}
 
-  const fmtBytes = (v: number) => {
-    const u = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-    let i = 0
-    let n = v
-    while (n >= 1024 && i < u.length - 1) {
-      n /= 1024
-      i++
-    }
-    return `${n.toFixed(1)} ${u[i]}`
-  }
-
-  const stats = [
-    { key: 'user_count', label: t('Users') },
-    { key: 'project_count', label: t('Projects') },
-    { key: 'active_users', label: t('Active users') },
-    { key: 'active_projects', label: t('Active projects') },
-    { key: 'overleaf_storage', label: t('Overleaf storage'), bytes: true },
-    { key: 'mongodb_storage', label: t('MongoDB storage'), bytes: true },
-  ]
-
+function BoundaryErrorUI({ name, err, onRetry }: { name: string; err: Error; onRetry: (e: Error, info: any) => void }) {
   return (
-    <div>
-      {failed && (
-        <div className="px-5 pt-4 text-sm text-muted-foreground">
-          Live values are not available yet (stats collector pending or disabled).{
-          ' '}
-          <a className="underline" href="/admin/instance-stats">
-            Open the full dashboard
-          </a>
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-4 p-5 md:grid-cols-3">
-        {stats.map(s => {
-          const v = values[s.key]
-          return (
-            <Card key={s.key} className="bg-card/60 shadow-none">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {s.label}
-                  </span>
-                  <Badge variant="outline" className="text-[10px]">
-                    30d
-                  </Badge>
-                </div>
-                <div className="mt-1 text-2xl font-semibold tracking-tight">
-                  {v == null ? '—' : s.bytes ? fmtBytes(v) : v.toLocaleString()}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-      <div className="flex items-center justify-between border-t border-border px-5 py-3">
-        <span className="text-sm text-muted-foreground">
-          Time-series charts, alerts and e-mail configuration live in the full dashboard.
-        </span>
-        <a
-          className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-transparent px-3 text-sm font-medium hover:bg-accent"
-          href="/admin/instance-stats"
-        >
-          Open full dashboard
-        </a>
-      </div>
+    <div style={{ padding: 28 }}>
+      <Text ff="monospace" ta="uppercase" size="xs" c="dimmed" mb={8}>
+        section fault · {name}
+      </Text>
+      <Text size="sm" c="red">
+        {err?.message || 'This section could not render.'}
+      </Text>
+      <button
+        type="button"
+        style={{ marginTop: 12, border: '1px solid var(--mantine-color-default-border)', borderRadius: 9, padding: '8px 14px', cursor: 'pointer', background: 'var(--mantine-color-body)', fontSize: 13 }}
+        onClick={() => onRetry(err, { phase: 'render' })}
+      >
+        Retry section
+      </button>
     </div>
   )
 }
 
-// Uniform lazy wrapper for the shell's Suspense handling.
-const InstanceSectionLazy = lazy(() => Promise.resolve({ default: InstanceSection }))
-
-// ---- the hub -------------------------------------------------------------
+class Boundary extends Component<
+  { name: string; onRetry: (e: Error, info: any) => void; children: ReactNode },
+  { err: Error | null }
+> {
+  constructor(props: any) {
+    super(props)
+    this.state = { err: null }
+  }
+  static getDerivedStateFromError(err: Error) {
+    return { err }
+  }
+  componentDidCatch(err: Error, info: any) {
+    this.props.onRetry(err, { section: this.props.name, ...info })
+  }
+  render() {
+    if (this.state.err)
+      return <BoundaryErrorUI name={this.props.name} err={this.state.err} onRetry={this.props.onRetry} />
+    return this.props.children
+  }
+}
 
 export default function AdminHubRoot() {
-  const { t } = useTranslation()
-  const { isReady } = useWaitForI18n()
-  if (!isReady) return null
+  const { section, select } = useHashSection(INST)
+  const [nonce, setNonce] = useState(0)
 
-  const sections = [
-    {
-      id: 'instance',
-      label: t('Instance'),
-      icon: Server,
-      content: InstanceSectionLazy as React.LazyExoticComponent<() => React.ReactNode>,
-    },
-    { id: 'site', label: t('Site settings'), icon: Settings, content: SiteSection },
-    { id: 'users', label: t('Users'), icon: Users, content: UsersSection },
-    { id: 'projects', label: t('Projects'), icon: FolderKanban, content: ProjectsSection },
-    { id: 'llm', label: t('LLM'), icon: Bot, content: LlmSection },
-  ]
+  const handleSectionChange = useCallback((next: string) => {
+    select(next)
+  }, [select])
+  const reload = useCallback(() => setNonce(n => n + 1), [])
+  const onSectionError = useCallback((err: Error, info: any) => {
+    console.error('[admin-hub]', err, info)
+  }, [])
+
+  let content: ReactNode
+  switch (section) {
+    case USERS:
+      content = (
+        <SectionBoundary name={USERS} onRetry={onSectionError}>
+          <AdminUsersSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+    case PROJECTS:
+      content = (
+        <SectionBoundary name={PROJECTS} onRetry={onSectionError}>
+          <AdminProjectsSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+    case LLM:
+      content = (
+        <SectionBoundary name={LLM} onRetry={onSectionError}>
+          <AdminLlmSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+    case TPL:
+      content = (
+        <SectionBoundary name={TPL} onRetry={onSectionError}>
+          <AdminTemplatesSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+    case SITE:
+      content = (
+        <SectionBoundary name={SITE} onRetry={onSectionError}>
+          <AdminSiteSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+    case INST:
+    default:
+      content = (
+        <SectionBoundary name={INST} onRetry={onSectionError}>
+          <AdminInstanceSection key={nonce} />
+        </SectionBoundary>
+      )
+      break
+  }
 
   return (
-    <HubShell
-      title={t('OlliTeX Admin')}
-      icon={Server}
-      sections={sections}
-      defaultSection="instance"
-      homeLabel={t('Home')}
-    />
+    <HubLayout
+      brand="OlliTeX"
+      tagline="Admin hub"
+      nav={NAV_GROUPS}
+      active={section}
+      onSelect={handleSectionChange}
+      title="Administration"
+      subtitle="Users, projects, templates, AI, and site configuration."
+      headerActions={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <a
+            href="/admin"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              fontSize: 12.5,
+              color: 'var(--color-ink-2)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Icon name="open_in_new" size={16} /> Legacy admin
+          </a>
+        </div>
+      }
+    >
+      {content}
+    </HubLayout>
   )
 }
