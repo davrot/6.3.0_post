@@ -22,6 +22,10 @@ const entryPoints = {
   'ide-detached': './frontend/js/ide-detached.ts',
   marketing: './frontend/js/marketing.ts',
   'main-style': './frontend/stylesheets/main-style.scss',
+  // OlliTeX kit (Option B): dedicated Tailwind stylesheet — see
+  // frontend/stylesheets/olkit.scss + tailwind.config.js. Loaded as its own
+  // file (layout-base.pug) so the Bootstrap app CSS stays untouched.
+  'olkit-style': './frontend/stylesheets/olkit.scss',
   tracking: './frontend/js/infrastructure/tracking.ts',
   'linkedin-insight': './frontend/js/infrastructure/linkedin-insight.ts',
   highlight: './frontend/js/highlight.js',
@@ -231,11 +235,12 @@ module.exports = {
           // Resolve relative paths sensibly in SASS
           { loader: 'resolve-url-loader' },
           {
-            // Runs autoprefixer on CSS via postcss
+            // Runs the OlliTeX kit's Tailwind (scoped, preflight off — see
+            // tailwind.config.js) + autoprefixer on CSS via postcss
             loader: 'postcss-loader',
             options: {
               postcssOptions: {
-                plugins: ['autoprefixer'],
+                plugins: [require('tailwindcss'), 'autoprefixer'],
               },
             },
           },

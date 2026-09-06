@@ -58,7 +58,11 @@ async function manageProjectsPage(req, res, next) {
 
 async function getProjectsJson(req, res) {
   const { filters, page, sort } = req.body
-  const { userId } = req.params
+  // The admin "All projects" list calls POST /admin/user/null/projects with the
+  // literal string "null" (see api.ts). Normalize it here — without this the
+  // query becomes { owner_ref: "null" } and mongoose throws a CastError (500).
+  const rawUserId = req.params.userId
+  const userId = !rawUserId || rawUserId === 'null' ? null : rawUserId
 
   const projectsPage = await _getProjects(userId, filters, sort, page)
   res.json(projectsPage)

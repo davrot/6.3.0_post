@@ -13,11 +13,11 @@
   },
   "dependencies": {
     "@overleaf/logger": "*",
-    "express": "*",
-    "@overleaf/settings": "*"
+    "@overleaf/settings": "*",
+    "express": "*"
   },
   "devDependencies": {
-    "vitest": "^2.0.0",
-    "supertest": "^6.3.0"
+    "supertest": "^6.3.0",
+    "vitest": "^2.0.0"
   }
 }

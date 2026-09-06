@@ -1,0 +1,115 @@
+// OlliTeX kit (Option B: shadcn-flavored UI layer on Radix + Tailwind).
+// Tailwind utilities are generated into this dedicated stylesheet so the
+// Bootstrap-based app CSS (main-style.css) stays untouched.
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// --kit-* tokens are HSL CHANNELS (space-separated, no hsl() wrapper)
+// matching the `hsl(var(--kit-x))` utilities in tailwind.config.js.
+//
+// Theme mapping (Overleaf convention, see use-themed-page.tsx):
+//   body[data-theme='default']  -> dark (OL "default" dark)
+//   body[data-theme='light']    -> light
+// `:root` carries the light values as the safe first-paint fallback.
+
+:root,
+body[data-theme='light'] {
+  --kit-radius: 0.5rem;
+
+  --kit-background: 0 0% 100%;
+  --kit-foreground: 220 30% 12%;
+
+  --kit-card: 0 0% 100%;
+  --kit-card-foreground: 220 30% 12%;
+
+  --kit-primary: 217 47% 38%; // OlliTeX deep blue (#28518f range)
+  --kit-primary-foreground: 0 0% 100%;
+
+  --kit-secondary: 214 20% 94%;
+  --kit-secondary-foreground: 220 30% 12%;
+
+  --kit-muted: 214 25% 95%;
+  --kit-muted-foreground: 220 12% 42%;
+
+  --kit-accent: 214 33% 93%;
+  --kit-accent-foreground: 220 30% 12%;
+
+  --kit-destructive: 0 72% 48%;
+  --kit-destructive-foreground: 0 0% 100%;
+
+  --kit-border: 214 18% 86%;
+  --kit-input: 214 18% 80%;
+  --kit-ring: 217 47% 38%;
+  --kit-shadow: 220 40% 10%;
+}
+
+body[data-theme='default'] {
+  --kit-radius: 0.5rem;
+
+  --kit-background: 218 33% 8%;
+  --kit-foreground: 214 25% 92%;
+
+  --kit-card: 217 30% 12%;
+  --kit-card-foreground: 214 25% 92%;
+
+  --kit-primary: 217 75% 62%;
+  --kit-primary-foreground: 220 40% 8%;
+
+  --kit-secondary: 217 22% 20%;
+  --kit-secondary-foreground: 214 25% 92%;
+
+  --kit-muted: 217 22% 17%;
+  --kit-muted-foreground: 215 15% 68%;
+
+  --kit-accent: 217 25% 22%;
+  --kit-accent-foreground: 214 25% 95%;
+
+  --kit-destructive: 0 72% 56%;
+  --kit-destructive-foreground: 0 0% 100%;
+
+  --kit-border: 217 20% 24%;
+  --kit-input: 217 20% 30%;
+  --kit-ring: 217 75% 62%;
+  --kit-shadow: 0 0% 0%;
+}
+
+// Layout scaffolding used by the hub pages (Page A: admin, Page B: workspace).
+.olkit {
+  min-height: 100vh;
+  background-color: hsl(var(--kit-background));
+  color: hsl(var(--kit-foreground));
+  font-family: 'Inter', system-ui, Avenir, Helvetica, sans-serif;
+}
+
+// Cards get a subtle raised surface (shadcn look) on top of the theme.
+.olkit-card {
+  background-color: hsl(var(--kit-card));
+  color: hsl(var(--kit-card-foreground));
+  border: 1px solid hsl(var(--kit-border));
+  border-radius: var(--kit-radius);
+  box-shadow: 0 1px 2px 0 hsl(var(--kit-shadow) / 0.06),
+    0 6px 20px -8px hsl(var(--kit-shadow) / 0.18);
+}
+
+// Focus ring parity across kit primitives (Radix elements render their own
+// focus styles inconsistently across primitives).
+.olkit :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--kit-background)),
+    0 0 0 4px hsl(var(--kit-ring) / 0.7);
+}
+
+// Embedded standalone page roots inside the hub shells (project list,
+// library, site settings, ...): they render their own page chrome (navbar,
+// footer, cookie banner, system messages) — hide it inside the hub so the
+// hub owns the page frame. Scoped to .olkit-embed only, so standalone
+// pages are unaffected.
+.olkit-embed .navbar-default,
+.olkit-embed .navbar-main,
+.olkit-embed footer,
+.olkit-embed .cookie-banner,
+.olkit-embed .system-messages,
+.olkit-embed .project-list-sidebar-wrapper-react {
+  display: none !important;
+}

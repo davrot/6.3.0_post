@@ -21,6 +21,10 @@ html(
 
 		//- Stylesheet
 		link(rel='stylesheet' href=buildCssPath() id='main-stylesheet')
+		//- OlliTeX kit stylesheet (shadcn-flavored UI layer; tokens adapt to
+		//- body[data-theme] dark/light — see frontend/stylesheets/olkit.scss)
+		if typeof buildStylesheetPath == 'function'
+			link(rel='stylesheet' href=buildStylesheetPath('olkit-style.css'))
 		block css
 			each file in entrypointStyles(entrypoint)
 				link(rel='stylesheet' href=file)

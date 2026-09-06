@@ -1,0 +1,37 @@
+extends ../../../../app/views/layout-react
+
+block entrypointVar
+	- entrypoint = 'modules/ollitex-hub/pages/workspace-hub'
+
+block vars
+	- const hideNavLogo = true
+	- const hideBrandTitle = true
+	- const suppressNavContentLinks = true
+	- const suppressNavbar = true
+	- const suppressFooter = true
+	- const suppressPugCookieBanner = true
+	- const showThinFooter = false
+
+block append meta
+	meta(name='ol-userSettings' data-type='json' content=userSettings)
+	meta(name='ol-overallThemes' data-type='json' content=overallThemes)
+	meta(name='ol-adminOverallTheme' content=(user && user.ace && user.ace.overallTheme) || '')
+
+	script(type="text/javascript" nonce=scriptNonce).
+		(function () {
+		  function apply() {
+		    try {
+		      var el = document.querySelector('meta[name=ol-adminOverallTheme]');
+		      if (!el) return;
+		      var v = el.getAttribute('content') || '';
+		      var prefersDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		      var dark = v === 'system' ? prefersDark : v !== 'light-';
+		      document.body.dataset.theme = dark ? 'default' : 'light';
+		    } catch (e) {}
+		  }
+		  if (document.body) apply();
+		  else document.addEventListener('DOMContentLoaded', apply);
+		})();
+
+block content
+	.olkit-workspace-hub#workspace-hub-root

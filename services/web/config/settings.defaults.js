@@ -1447,6 +1447,7 @@ function buildSettings() {
     // reader at module load, so it must be imported AFTER 'llm'.
     'languagetool',
     'latex-editor', // [IVc]: MathLive-based LaTeX equation editor module
+    'ollitex-hub', // Option B (owner 2026-09-06): /hub/admin + /hub/workspace unified pages
   ],
   viewIncludes: {},
 

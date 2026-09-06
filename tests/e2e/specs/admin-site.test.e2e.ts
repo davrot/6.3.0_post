@@ -19,20 +19,26 @@ test('/admin/site renders golden tabs, no LLM tab (R9-9)', async ({ page }) => {
   const res = await page.goto('/admin/site')
   expect(res?.status() ?? 200).toBe(200)
 
-  const tabs = page.locator('button, a, [role="tab"], .nav-link')
-  for (const label of [
+  // 2026-09-06: the golden tabs are the BUTTONS on the page's "Manage
+  // Extensions" tab rail. The page also intentionally renders a DS-nav bar
+  // (aria-label "Primary") whose links include a global "/templates" link —
+  // broad whole-doc/whole-root locators matched that link first and made the
+  // assertion order-dependent. Scope to the tab rail; intent = R9-9.
+  const rail = page.locator('#manage-site-root nav[aria-label="Manage Extensions"]')
+  const goldenTabs = [
     'Sandboxed compiles',
     'Git integration',
     'GitHub sync',
     'WebDAV',
     'Dropbox',
     'Templates',
-    'Misc',
-  ]) {
-    await expect(tabs.filter({ hasText: label }).first()).toBeVisible({ timeout: 15_000 })
+    'Miscellaneous',
+  ]
+  for (const label of goldenTabs) {
+    await expect(rail.getByRole('button', { name: label, exact: true })).toBeVisible({ timeout: 15_000 })
   }
   expect(
-    await tabs.filter({ hasText: /^LLM\b/i }).count(),
+    await rail.getByRole('button', { name: /^LLM\b/i }).count(),
     'the LLM tab must not be on /admin/site'
   ).toBe(0)
 })
