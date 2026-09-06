@@ -1179,6 +1179,13 @@ function buildSettings() {
         __dirname,
         '../modules/latex-editor/frontend/js/components/latex-editor-toolbar-button'
       ),
+
+      // python-runner module (ported from ayakaleaf-pro): "files saved" / error
+      // toasts for browser-side Python execution output files.
+      Path.resolve(
+        __dirname,
+        '../modules/python-runner/frontend/js/components/editor/python/python-output-toasts'
+      ),
 ],
     rootContextProviders: [
       Path.resolve(
@@ -1193,7 +1200,16 @@ function buildSettings() {
     ),
     ],
     mainEditorLayoutPanels: [],
-    pythonRunner: [],
+    pythonRunner: [
+      // python-runner module (ported from ayakaleaf-pro, owner-provided 2026-09-06):
+      // browser-side Python (Pyodide) execution for .py files; split editor +
+      // output pane with Run/Stop; active for users of the 'overleaf-code'
+      // split test (gated in core editor.tsx).
+      Path.resolve(
+        __dirname,
+        '../modules/python-runner/frontend/js/components/layout/python-editor-split'
+      ),
+    ],
     langFeedbackLinkingWidgets: [],
     labsExperiments: [],
     integrationLinkingWidgets: [
@@ -1486,6 +1502,13 @@ function buildSettings() {
       process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
     'import-markdown':
       process.env.ENABLE_PANDOC_CONVERSIONS === 'true' ? 'enabled' : 'default',
+    // python-runner module (ported from ayakaleaf-pro, owner-provided
+    // 2026-09-06): CE feature flag for the browser-side Python (Pyodide)
+    // split editor. 'enabled' => the overleaf-code split test resolves to
+    // the 'enabled' variant for every user (see the CE path in
+    // SplitTestHandler._getNonSaasAssignment); 'default' => hidden.
+    'overleaf-code':
+      process.env.ENABLE_PYTHON_RUNNER === 'true' ? 'enabled' : 'default',
   },
 
   oauthProviders: {

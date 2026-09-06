@@ -3159,6 +3159,7 @@
   "push_local_changes": "Export to WebDAV",
   "push_sharelatex_changes_to_github": "Push __appName__ changes to GitHub",
   "push_to_github_pull_to_overleaf": "Push to GitHub, pull to __appName__",
+  "python_run_code_caveat": "Python runs locally in your browser — only run code you can read.",
   "quoted_text": "Quoted text",
   "raw_logs": "Raw logs",
   "raw_logs_description": "Raw logs from the LaTeX compiler",

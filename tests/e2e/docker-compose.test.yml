@@ -58,6 +58,9 @@ services:
       CRYPTO_RANDOM: ${CRYPTO_RANDOM}
       WEB_API_PASSWORD: ${WEB_API_PASSWORD}
       SHARED_SERVICE_TOKEN: ${SHARED_SERVICE_TOKEN}
+      # python-runner module: test stack exercises it (CE flag via
+      # splitTestOverrides; see settings.defaults.js 'overleaf-code')
+      ENABLE_PYTHON_RUNNER: 'true'
       OT_JWT_AUTH_KEY: ${OT_JWT_AUTH_KEY}
       OVERLEAF_SESSION_SECRET: ${OVERLEAF_SESSION_SECRET}
       OVERLEAF_INVITE_TOKEN_SECRET: ${OVERLEAF_INVITE_TOKEN_SECRET}

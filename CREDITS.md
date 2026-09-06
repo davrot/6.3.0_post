@@ -60,6 +60,15 @@ Raptor Mini models.
 
 [Alessandro Lotti](https://github.com/alelotti96) (alelotti96) worked on part of the LLM work.
 
+## Python runner
+
+The Python runner module (browser-side Python execution for `.py` files via
+[Pyodide](https://pyodide.org)) is the python-runner module from the
+[ayakaleaf-pro](https://ayakaleaf-pro.ayaka.space) CE fork (commit
+`0370307dc1`), provided by its maintainer and adapted to this fork on
+2026-09-06 (settings + toast wiring, the run-button safety caveat, and
+in-repo unit/E2E test coverage).
+
 ## Inspiration
 
 The local-first, self-hosted approach to LaTeX editing was inspired by
